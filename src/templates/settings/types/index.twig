@@ -1,0 +1,63 @@
+{% extends "_layouts/cp" %}
+{% set title = "Product Label Types"|t('app') %}
+
+{% do view.registerAssetBundle('craft\\web\\assets\\admintable\\AdminTableAsset') -%}
+
+{% do view.registerTranslations('app', [
+    "Name",
+    "Handle",
+    "Manage product labels",
+    "No product label types exist yet.",
+]) %}
+
+{% block actionButton %}
+    <a href="{{ url('settings/productlabels/new') }}" class="btn submit add icon">{{ "New product label type"|t('app') }}</a>
+{% endblock %}
+
+{% set crumbs = [
+    { label: "Settings"|t('app'), url: url('settings') }
+] %}
+
+{% block content %}
+    <div id="productlabeltypes-vue-admin-table"></div>
+{% endblock %}
+
+{% set tableData = [] %}
+{% for type in productLabelTypes %}
+    {% set tableData = tableData|merge([{
+        id: type.id,
+        title: type.name|t('site'),
+        url: url('settings/productlabels/' ~ type.id),
+        name: type.name|t('site')|e,
+        handle: type.handle,
+        manageProductLabels: url('productlabels/' ~ type.handle),
+    }]) %}
+{% endfor %}
+
+{% js %}
+    var columns = [
+        {
+            name: '__slot:title',
+            title: Craft.t('app', 'Name'),
+        },
+        {
+            name: '__slot:handle',
+            title: Craft.t('app', 'Handle'),
+        },
+        {
+            name: 'manageCategories',
+            title: "",
+            callback: function(value) {
+            return '<a href="'+value+'">' + Craft.escapeHtml(Craft.t('app', "Manage product labels")) + '</a>';
+        }
+        },
+    ];
+
+    new Craft.VueAdminTable({
+        columns: columns,
+        container: '#productlabeltypes-vue-admin-table',
+        deleteAction: 'productlabels/product-labels/delete-product-label-type',
+        emptyMessage: Craft.t('app', 'No product label types exist yet.'),
+        tableData: {{ tableData|json_encode|raw }}
+    });
+{% endjs %}

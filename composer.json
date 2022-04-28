@@ -1,0 +1,39 @@
+{
+    "name": "thepixelage/craft-productlabels",
+    "description": "Product Labels is a Craft Commerce plugin for creating labels for products",
+    "type": "craft-plugin",
+    "version": "4.0.0-beta.1",
+    "keywords": [
+        "craft",
+        "cms",
+        "craftcms",
+        "craft-plugin",
+        "craft-productlabels"
+    ],
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "ThePixelAge",
+            "homepage": "https://www.thepixelage.com"
+        }
+    ],
+    "require": {
+        "php": "^8.0",
+        "craftcms/cms": "^4.0.0-beta",
+        "craftcms/commerce": "^4.0.0-beta",
+        "ext-json": "*"
+    },
+    "autoload": {
+        "psr-4": {
+          "thepixelage\\productlabels\\": "src/"
+        }
+    },
+    "extra": {
+        "name": "Product Labels",
+        "handle": "productlabels",
+        "developer": "ThePixelAge",
+        "developerUrl": "https://www.thepixelage.com",
+        "documentationUrl": "https://github.com/thepixelage/craft-productlabels/tree/develop-v4",
+        "class": "thepixelage\\productlabels\\Plugin"
+    }
+}

@@ -1,0 +1,25 @@
+{% extends '_layouts/cp.twig' %}
+{% import '_includes/forms' as forms %}
+
+{% if isNew %}
+    {% set title = "Create a new product label"|t('productlabels') %}
+{% else %}
+    {% set title = element.title %}
+{% endif %}
+
+{% block header %}
+    <div class="flex flex-nowrap">
+        {{ block('pageTitle') }}
+    </div>
+    <div class="flex" id="action-buttons">
+        {{ block('actionButton') }}
+    </div>
+{% endblock %}
+
+{% block main %}
+    xx
+{% endblock %}
+
+{% block content %}
+    yy
+{% endblock %}
