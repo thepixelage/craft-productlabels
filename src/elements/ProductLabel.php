@@ -23,6 +23,11 @@ use yii\base\InvalidConfigException;
 use yii\db\Exception;
 use yii\web\Response;
 
+/**
+ * @property-read null|int $sourceId
+ * @property-read string $gqlTypeName
+ * @property-read ProductLabelType $type
+ */
 class ProductLabel extends Element
 {
     public ?int $typeId = null;
@@ -305,6 +310,7 @@ class ProductLabel extends Element
 
     /**
      * @throws Exception
+     * @throws \yii\base\Exception
      */
     public function afterSave(bool $isNew): void
     {

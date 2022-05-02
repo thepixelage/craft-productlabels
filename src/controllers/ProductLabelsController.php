@@ -179,15 +179,34 @@ class ProductLabelsController extends Controller
 
     /**
      * @throws BadRequestHttpException
+     * @throws NotFoundHttpException
+     * @throws SiteNotFoundException
+     * @throws ForbiddenHttpException
+     * @throws InvalidConfigException
+     * @throws \yii\base\Exception
      */
-    public function actionEdit(string $typeHandle, ?int $productLabelId = null, ?ProductLabel $productLabel = null): Response
+    public function actionEdit(string $typeHandle, ?int $productLabelId = null, ?string $site = null, ?ProductLabel $productLabel = null): Response
     {
         $productLabelType = Plugin::getInstance()->productLabels->getTypeByHandle($typeHandle);
+
+        if ($site !== null) {
+            $siteHandle = $site;
+            $site = Craft::$app->getSites()->getSiteByHandle($siteHandle);
+
+            if (!$site) {
+                throw new NotFoundHttpException('Invalid site handle: ' . $siteHandle);
+            }
+        } else {
+            $site = Craft::$app->getSites()->getCurrentSite();
+        }
 
         if (!$productLabel) {
             if ($productLabelId) {
                 $productLabel = ProductLabel::find()
                     ->id($productLabelId)
+                    ->structureId($productLabelType->structureId)
+                    ->site($site)
+                    ->status(null)
                     ->one();
 
                 if (!$productLabel) {
@@ -199,10 +218,53 @@ class ProductLabelsController extends Controller
             }
         }
 
+        $this->enforceSitePermission($site);
+        $this->enforceEditProductLabelPermissions($productLabel);
+
+        if (Craft::$app->getIsMultiSite()) {
+            $siteIds = array_map(function ($siteId) {
+                return $siteId;
+            }, $productLabel->getSupportedSites());
+
+            if ($productLabel->enabled && $productLabel->id) {
+                $siteStatusesQuery = $productLabel::find()
+                    ->select(['elements_sites.siteId', 'elements_sites.enabled'])
+                    ->id($productLabel->id)
+                    ->siteId($siteIds)
+                    ->status(null)
+                    ->asArray();
+                $siteStatuses = array_map(fn($enabled) => (bool)$enabled, $siteStatusesQuery->pairs());
+            } else {
+                // If the element isn't saved yet, assume other sites will share its current status
+                $defaultStatus = !$productLabel->id && $productLabel->enabled && $productLabel->getEnabledForSite();
+                $siteStatuses = array_combine($siteIds, array_map(fn() => $defaultStatus, $siteIds));
+            }
+        } else {
+            /* @noinspection PhpUnhandledExceptionInspection */
+            $siteIds = [Craft::$app->getSites()->getPrimarySite()->id];
+            $siteStatuses = [];
+        }
+
+        $settingsJs = Json::encode([
+            'canEditMultipleSites' => true,
+            'canSaveCanonical' => true,
+            'canonicalId' => $productLabel->getCanonicalId(),
+            'elementType' => get_class($productLabel),
+            'enablePreview' => false,
+            'enabledForSite' => $productLabel->enabled && $productLabel->getEnabledForSite(),
+            'siteId' => $productLabel->siteId,
+            'siteStatuses' => $siteStatuses,
+        ]);
+        $js = <<<JS
+new Craft.ElementEditor($('#main-form'), $settingsJs)
+JS;
+        $this->view->registerJs($js);
+
         return $this->renderTemplate('productlabels/productlabels/_edit', [
             'productLabel' => $productLabel,
             'productLabelType' => $productLabelType,
-            'siteIds' => [],
+            'site' => $site,
+            'siteIds' => $siteIds,
             'canUpdateSource' => true,
             'isNew' => ($productLabel->id == null),
             'sourceId' => $productLabel->getCanonicalId(),
@@ -222,14 +284,21 @@ class ProductLabelsController extends Controller
 
         $productLabelId = $this->request->getBodyParam('sourceId');
         $productLabelTypeId = $this->request->getBodyParam('productLabelTypeId');
+        $siteId = $this->request->getBodyParam('siteId');
 
         $type = Plugin::getInstance()->productLabels->getTypeById($productLabelTypeId);
-        $site = Craft::$app->getSites()->getCurrentSite();
+        if ($siteId) {
+            $site = Craft::$app->getSites()->getSiteById($siteId);
+        } else {
+            $site = Craft::$app->getSites()->getCurrentSite();
+        }
 
         if ($productLabelId) {
             $productLabel = ProductLabel::find()
                 ->id($productLabelId)
+                ->structureId($type->structureId)
                 ->site($site)
+                ->status(null)
                 ->one();
         } else {
             $productLabel = new ProductLabel();

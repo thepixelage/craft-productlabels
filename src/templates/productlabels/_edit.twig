@@ -24,7 +24,6 @@
 {% set canDeleteForSite = true %}
 {% set saveSourceAction = 'productlabels/product-labels/save' %}
 {% set deleteSourceAction = 'productlabels/product-labels/delete' %}
-{% set deleteForSiteAction = 'productlabels/product-labels/delete-for-site' %}
 
 {% set saveSourceAction = saveSourceAction ?? null %}
 {% set duplicateSourceAction = duplicateSourceAction ?? null %}
@@ -47,7 +46,20 @@
 {% set canEditMultipleSites = isMultiSiteElement and (propEditableSiteIds|length > 1 or addlEditableSiteIds|length) %}
 {% set isUnpublishedDraft = productLabel.getIsUnpublishedDraft() %}
 
-{% set canDeleteDraft = isDraft and ((canDeleteDraft ?? false) or element.creatorId == currentUser.id) and deleteDraftAction %}
+{# See if this is a new site that isn’t supported by the source element yet #}
+{% if isUnpublishedDraft %}
+    {% set isNewlySupportedSite = true %}
+{% elseif isDraft %}
+    {% set isNewlySupportedSite = not productLabel.find()
+        .id(productLabel.getSourceId())
+        .siteId(productLabel.siteId)
+        .anyStatus()
+        .exists() %}
+{% else %}
+    {% set isNewlySupportedSite = false %}
+{% endif %}
+
+{% set canDeleteDraft = isDraft and ((canDeleteDraft ?? false) or productLabel.creatorId == currentUser.id) and deleteDraftAction %}
 {% set canUpdateSource = canUpdateSource ?? false %}
 {% set canDuplicateSource = canDuplicateSource ?? false %}
 {% set canAddAnother = canAddAnother ?? false %}
@@ -191,10 +203,22 @@
 {% block header %}
     <div class="flex flex-nowrap">
         {{ block('pageTitle') }}
+        {{ block('contextMenu') }}
     </div>
     <div class="flex" id="action-buttons">
         {{ block('actionButton') }}
     </div>
+{% endblock %}
+
+{% block contextMenu %}
+    {% if craft.app.getIsMultiSite() %}
+        {% set urlFormat = url("productlabels/#{productLabelType.handle}/#{craft.app.request.getSegment(3)}?site={handle}") %}
+        {% include "_elements/sitemenu.twig" with {
+            siteIds: siteIds,
+            selectedSiteId: productLabel.siteId,
+            urlFormat: urlFormat
+        } only %}
+    {% endif %}
 {% endblock %}
 
 {% block actionButton %}
