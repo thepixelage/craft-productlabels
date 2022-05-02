@@ -101,7 +101,10 @@
 
 {% if tabs is not defined %}
     {% set tabs = form.getTabMenu() %}
-    {% set tabs = tabs|merge([{'label':'Conditions'|t('productlabels'),'url':'#conditions','class':''}]) %}
+    {% set tabs = tabs|merge([
+        {'label':'Matching Items'|t('productlabels'),'url':'#matching-items','class':''},
+        {'label':'Conditions'|t('productlabels'),'url':'#conditions','class':''}
+    ]) %}
 {% endif %}
 
 {% set settingsHtml = (block('settings') ?? '')|trim %}
@@ -315,26 +318,107 @@
     <div id="fields">
         {{ form.render()|raw }}
 
+        <div id="matching-items" class="hidden">
+
+            {{ forms.lightswitchField({
+                label: "All purchasables"|t('commerce'),
+                id: 'allPurchasables',
+                name: 'allPurchasables',
+                reverseToggle: '#matching-items-purchasables',
+                on: productLabel.allPurchasables ? true : false,
+                errors: productLabel.getErrors('allPurchasables')
+            }) }}
+
+            <div id="matching-items-purchasables" {% if productLabel.allPurchasables %}class="hidden"{% endif %}>
+                {% for purchasableType in purchasableTypes %}
+                    {{ forms.elementSelectField({
+                        id: 'purchasables-'~purchasableType.elementType|id,
+                        label: purchasableType.name ~ ' ' ~ '(Purchasable)'|t('commerce'),
+                        name: 'purchasables['~purchasableType.elementType~']',
+                        elements: purchasables[purchasableType.elementType] ?? null,
+                        elementType: purchasableType.elementType,
+                        limit: null,
+                        instructions: '{type} for which this sale will be applicable to.'|t('commerce', {
+                            type: purchasableType.name
+                        }),
+                        errors: productLabel.getErrors('purchasables-'~purchasableType.elementType|replace('\\','-'))
+                    }) }}
+                {% endfor %}
+            </div>
+
+            {{ forms.lightswitchField({
+                label: "All categories"|t('commerce'),
+                id: 'allCategories',
+                name: 'allCategories',
+                reverseToggle: '#matching-items-categories',
+                on: productLabel.allCategories ? true : false,
+                errors: productLabel.getErrors('allCategories')
+            }) }}
+
+            <div id="matching-items-categories" {% if productLabel.allCategories %}class="hidden"{% endif %}>
+
+                {{ forms.elementSelectField({
+                    id: 'categories',
+                    label: 'Categories'|t('commerce'),
+                    name: 'categories',
+                    elements: categories ? categories : null,
+                    elementType: categoryElementType,
+                    limit: null,
+                    instructions: "Categories that the purchasables must be related to."|t('commerce'),
+                    errors: productLabel.getErrors('categoryIds'),
+                }) }}
+
+                <a class="fieldtoggle {% if (productLabel.categoryRelationshipType != 'element') %}expanded{% endif %}"
+                   data-target="categoryRelationshipType-advanced">Advanced</a>
+
+                <div id="categoryRelationshipType-advanced"
+                     class="{% if (productLabel.categoryRelationshipType == 'element') %}hidden{% endif %}">
+                    {{ forms.selectField({
+                        id: 'categoryRelationshipType',
+                        name: 'categoryRelationshipType',
+                        label: 'Categories Relationship Type'|t('commerce'),
+                        instructions: "How the Purchasables and Categories are related, which determines the matching items. See [Relations Terminology]({link})."|t('commerce', {
+                            link: 'https://craftcms.com/docs/4.x/relations.html#terminology',
+                        }),
+                        options: categoryRelationshipType,
+                        value: productLabel.categoryRelationshipType,
+                        errors: productLabel.getErrors('categoryRelationshipType')
+                    }) }}
+                </div>
+
+            </div>
+        </div>
+
         <div id="conditions" class="hidden">
-            <div>Set up condition rules below to limit when this fragment should be visible. If no rules are added, this fragment will be visible to all cases.</div>
 
-{#            {{ forms.field({#}
-{#                label: 'Match Entry'|t('fragments'),#}
-{#                instructions: 'Create rules that allow this fragment to match the entry.'|t('fragments'),#}
-{#                errors: productLabel.getErrors('entryCondition')#}
-{#            }, productLabel.entryCondition.getBuilderHtml()|raw ) }}#}
+            {{ forms.dateTimeField({
+                label: "Start Date"|t('commerce'),
+                instructions: "Date from which the product label will be active. Leave blank for unlimited start date"|t('commerce'),
+                id: 'dateFrom',
+                name: 'dateFrom',
+                value: productLabel.dateFrom,
+                errors: productLabel.getErrors('dateFrom'),
+            }) }}
 
-{#            {{ forms.field({#}
-{#                label: 'Match User'|t('fragments'),#}
-{#                instructions: 'Create rules that allow this fragment to match the user.'|t('fragments'),#}
-{#                errors: productLabel.getErrors('userCondition')#}
-{#            }, productLabel.userCondition.getBuilderHtml()|raw ) }}#}
+            {{ forms.dateTimeField({
+                label: "End Date"|t('commerce'),
+                instructions: "Date when the product label will be finished. Leave blank for unlimited end date"|t('commerce'),
+                id: 'dateTo',
+                name: 'dateTo',
+                value: productLabel.dateTo,
+                errors: productLabel.getErrors('dateTo'),
+            }) }}
 
-{#            {{ forms.field({#}
-{#                label: 'Match Request'|t('fragments'),#}
-{#                instructions: 'Create rules that allow this fragment to match the request.'|t('fragments'),#}
-{#                errors: productLabel.getErrors('requestCondition')#}
-{#            }, productLabel.requestCondition.getBuilderHtml()|raw ) }}#}
+            {% set productConditionInput %}
+                {{ productLabel.productCondition.getBuilderHtml()|raw }}
+            {% endset %}
+
+            {{ forms.field({
+                label: 'Match Product'|t('commerce'),
+                instructions: 'Create rules that allow this product label to match the product. If no rules are added, this product label will match all products.'|t('productlabels'),
+                errors: productLabel.getErrors('productCondition')
+            }, productConditionInput) }}
+
         </div>
     </div>
 {% endblock %}

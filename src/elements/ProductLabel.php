@@ -4,18 +4,22 @@ namespace thepixelage\productlabels\elements;
 
 use Craft;
 use craft\base\Element;
+use craft\commerce\elements\conditions\customers\DiscountCustomerCondition;
 use craft\controllers\ElementIndexesController;
 use craft\elements\actions\Delete;
 use craft\elements\actions\Duplicate;
 use craft\elements\actions\Edit;
 use craft\elements\actions\Restore;
 use craft\elements\actions\SetStatus;
+use craft\elements\conditions\ElementConditionInterface;
 use craft\elements\db\ElementQuery;
 use craft\elements\db\ElementQueryInterface;
 use craft\elements\User;
 use craft\helpers\UrlHelper;
 use craft\models\FieldLayout;
 use craft\services\ElementSources;
+use DateTime;
+use thepixelage\productlabels\conditions\ProductLabelProductCondition;
 use thepixelage\productlabels\elements\db\ProductLabelQuery;
 use thepixelage\productlabels\models\ProductLabelType;
 use thepixelage\productlabels\Plugin;
@@ -31,6 +35,11 @@ use yii\web\Response;
 class ProductLabel extends Element
 {
     public ?int $typeId = null;
+    public bool $allPurchasables = false;
+    public bool $allCategories = false;
+    public string $categoryRelationshipType = 'element';
+    public ?DateTime $dateFrom = null;
+    public ?DateTime $dateTo = null;
 
     public function __construct($config = [])
     {
@@ -65,6 +74,24 @@ class ProductLabel extends Element
     public static function hasStatuses(): bool
     {
         return true;
+    }
+
+    public function getProductCondition(): ElementConditionInterface
+    {
+        $condition = $this->_productCondition ?? new ProductLabelProductCondition();
+        $condition->mainTag = 'div';
+        $condition->name = 'productCondition';
+
+        return $condition;
+    }
+
+    public function getCustomerCondition(): ElementConditionInterface
+    {
+        $condition = $this->_customerCondition ?? new DiscountCustomerCondition();
+        $condition->mainTag = 'div';
+        $condition->name = 'customerCondition';
+
+        return $condition;
     }
 
     public static function find(): ElementQueryInterface

@@ -4,6 +4,7 @@ namespace thepixelage\productlabels\controllers;
 
 use Craft;
 use craft\base\Element;
+use craft\elements\Category;
 use craft\errors\ElementNotFoundException;
 use craft\errors\SiteNotFoundException;
 use craft\helpers\ElementHelper;
@@ -21,6 +22,8 @@ use yii\web\BadRequestHttpException;
 use yii\web\ForbiddenHttpException;
 use yii\web\NotFoundHttpException;
 use yii\web\Response;
+
+use craft\commerce\Plugin as Commerce;
 
 class ProductLabelsController extends Controller
 {
@@ -215,6 +218,8 @@ class ProductLabelsController extends Controller
             } else {
                 $productLabel = new ProductLabel();
                 $productLabel->typeId = $productLabelType->id;
+                $productLabel->allPurchasables = true;
+                $productLabel->allCategories = true;
             }
         }
 
@@ -260,6 +265,8 @@ new Craft.ElementEditor($('#main-form'), $settingsJs)
 JS;
         $this->view->registerJs($js);
 
+        $purchasableTypes = Commerce::getInstance()->getPurchasables()->getAllPurchasableElementTypes();
+
         return $this->renderTemplate('productlabels/productlabels/_edit', [
             'productLabel' => $productLabel,
             'productLabelType' => $productLabelType,
@@ -269,6 +276,19 @@ JS;
             'isNew' => ($productLabel->id == null),
             'sourceId' => $productLabel->getCanonicalId(),
             'sidebarHtml' => $productLabel->getSidebarHtml(false),
+            'purchasableTypes' => array_map(function ($purchasableType) {
+                return [
+                    'name' => $purchasableType::displayName(),
+                    'elementType' => $purchasableType,
+                ];
+            }, $purchasableTypes),
+            'categories' => [],
+            'categoryElementType' => Category::class,
+            'categoryRelationshipType' => [
+                'sourceElement' => Craft::t('commerce', 'Source - The category relationship field is on the purchasable'),
+                'targetElement' => Craft::t('commerce', 'Target - The purchasable relationship field is on the category'),
+                'element' => Craft::t('commerce', 'Either (Default) - The relationship field is on the purchasable or the category'),
+            ],
         ]);
     }
 

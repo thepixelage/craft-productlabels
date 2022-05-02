@@ -1,0 +1,45 @@
+<?php
+
+namespace thepixelage\productlabels\conditions\products;
+
+use Craft;
+use craft\base\conditions\BaseMultiSelectConditionRule;
+use craft\base\ElementInterface;
+use craft\commerce\elements\Product;
+use craft\commerce\Plugin as Commerce;
+use craft\elements\conditions\ElementConditionRuleInterface;
+use craft\elements\db\ElementQueryInterface;
+use craft\helpers\ArrayHelper;
+use yii\base\InvalidConfigException;
+
+class SkuConditionRule extends BaseMultiSelectConditionRule implements ElementConditionRuleInterface
+{
+    public function getLabel(): string
+    {
+        return Craft::t('app', 'SKU');
+    }
+
+    public function getExclusiveQueryParams(): array
+    {
+        return ['sku'];
+    }
+
+    /**
+     */
+    protected function options(): array
+    {
+        $products = Product::find()->all();
+
+        return ArrayHelper::map($products, 'uid', 'defaultSku');
+    }
+
+    public function modifyQuery(ElementQueryInterface $query): void
+    {
+
+    }
+
+    public function matchElement(ElementInterface $element): bool
+    {
+        return true;
+    }
+}
