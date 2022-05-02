@@ -28,6 +28,7 @@ class Install extends Migration
         if (!$this->db->tableExists(Table::PRODUCTLABELS)) {
             $this->createTable(Table::PRODUCTLABELS, [
                 'id' => $this->integer()->notNull(),
+                'typeId' => $this->integer()->notNull(),
                 'conditions' => $this->text(),
                 'dateCreated' => $this->dateTime()->notNull(),
                 'dateUpdated' => $this->dateTime()->notNull(),

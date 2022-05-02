@@ -4,8 +4,11 @@ namespace thepixelage\productlabels;
 
 use Craft;
 use craft\base\Model;
+use craft\events\DefineFieldLayoutFieldsEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterUrlRulesEvent;
+use craft\fieldlayoutelements\TitleField;
+use craft\models\FieldLayout;
 use craft\services\Elements;
 use craft\web\UrlManager;
 use thepixelage\productlabels\elements\ProductLabel;
@@ -34,8 +37,12 @@ class Plugin extends \craft\base\Plugin
 
         self::$plugin = $this;
 
+        $this->hasCpSection = true;
+        $this->hasCpSettings = false;
+
         $this->registerServices();
         $this->registerElementTypes();
+        $this->registerFieldLayoutStandardFields();
         $this->registerCpRoutes();
         $this->registerProjectConfigChangeListeners();
     }
@@ -43,6 +50,13 @@ class Plugin extends \craft\base\Plugin
     protected function createSettingsModel(): ?Model
     {
         return new Settings();
+    }
+
+    private function registerServices()
+    {
+        $this->setComponents([
+            'productLabels' => ProductLabels::class,
+        ]);
     }
 
     public function registerElementTypes(): void
@@ -55,11 +69,16 @@ class Plugin extends \craft\base\Plugin
         );
     }
 
-    private function registerServices()
+    private function registerFieldLayoutStandardFields()
     {
-        $this->setComponents([
-            'productLabels' => ProductLabels::class,
-        ]);
+        Event::on(FieldLayout::class, FieldLayout::EVENT_DEFINE_NATIVE_FIELDS, function(DefineFieldLayoutFieldsEvent $event) {
+            /* @var FieldLayout $fieldLayout */
+            $fieldLayout = $event->sender;
+
+            if ($fieldLayout->type == ProductLabel::class) {
+                $event->fields[] = TitleField::class;
+            }
+        });
     }
 
     private function registerCpRoutes()

@@ -1,0 +1,20 @@
+{% extends "_layouts/elementindex" %}
+{% set title = "Product Labels"|t('app') %}
+{% set elementType = 'thepixelage\\productlabels\\elements\\ProductLabel' %}
+{% set canHaveDrafts = false %}
+
+{% do view.registerJsFile(indexJsUrl, {
+    depends: 'craft\\web\\assets\\cp\\CpAsset'
+}) %}
+
+{% block initJs %}
+    Craft.productLabelTypes = {{ productLabelTypesJson|raw }};
+
+    {{ parent() }}
+{% endblock %}
+
+{% if typeHandle is defined %}
+    {% js %}
+        window.defaultTypeHandle = '{{ typeHandle }}';
+    {% endjs %}
+{% endif %}

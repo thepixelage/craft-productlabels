@@ -8,9 +8,9 @@ use craft\db\Query;
 use craft\errors\BusyResourceException;
 use craft\errors\StaleResourceException;
 use craft\events\ConfigEvent;
+use craft\helpers\ArrayHelper;
 use craft\helpers\StringHelper;
 use craft\models\FieldLayout;
-use craft\services\ProjectConfig;
 use thepixelage\productlabels\db\Table;
 use thepixelage\productlabels\elements\ProductLabel;
 use thepixelage\productlabels\models\ProductLabelType;
@@ -20,16 +20,33 @@ use yii\base\ErrorException;
 use yii\base\Exception;
 use yii\base\InvalidConfigException;
 use yii\base\NotSupportedException;
-use yii\db\ActiveRecord;
 use yii\web\ServerErrorHttpException;
 
 class ProductLabels extends Component
 {
-    public function getTypeById($typeId): ProductLabelType
+    public function getTypeById($typeId): null|ProductLabelType
     {
         $record = ProductLabelTypeRecord::find()->where(['id' => $typeId])->one();
 
         return $this->createProductLabelTypeFromRecord($record);
+    }
+
+    public function getTypeByUid($uid): ?ProductLabelType
+    {
+        $result = $this->createProductLabelTypesQuery()
+            ->where(['uid' => $uid])
+            ->one();
+
+        return $result ? new ProductLabelType($result) : null;
+    }
+
+    public function getTypeByHandle(string $handle): ?ProductLabelType
+    {
+        $result = $this->createProductLabelTypesQuery()
+            ->where(['handle' => $handle])
+            ->one();
+
+        return $result ? new ProductLabelType($result) : null;
     }
 
     public function getAllTypes(): array
@@ -45,6 +62,23 @@ class ProductLabels extends Component
         }
 
         return $types;
+    }
+
+    public function getEditableTypes(): array
+    {
+        if (Craft::$app->getRequest()->getIsConsoleRequest()) {
+            return $this->getAllTypes();
+        }
+
+        $user = Craft::$app->getUser()->getIdentity();
+
+        if (!$user) {
+            return [];
+        }
+
+        return ArrayHelper::where($this->getAllTypes(), function(ProductLabelType $type) use ($user) {
+            return $user->can("viewProductLabels:$type->uid");
+        }, true, true, false);
     }
 
     /**
@@ -77,7 +111,7 @@ class ProductLabels extends Component
         return true;
     }
 
-    public function deleteTypeById(int $typeId)
+    public function deleteTypeById(int $typeId): bool
     {
         if (!$typeId) {
             return false;
@@ -137,7 +171,7 @@ class ProductLabels extends Component
     public function handleDeletedProductLabelType(ConfigEvent $event)
     {
         $uid = $event->tokenMatches[0];
-        $type = $this->getProductLabelTypeByUid($uid);
+        $type = $this->getTypeByUid($uid);
         if (!$type) {
             return;
         }
@@ -152,15 +186,6 @@ class ProductLabels extends Component
         $query = ProductLabelTypeRecord::find()->andWhere(['uid' => $uid]);
 
         return $query->one() ?? new ProductLabelTypeRecord();
-    }
-
-    public function getProductLabelTypeByUid($uid): ?ProductLabelType
-    {
-        $result = $this->createProductLabelTypesQuery()
-            ->where(['uid' => $uid])
-            ->one();
-
-        return $result ? new ProductLabelType($result) : null;
     }
 
     private function createProductLabelTypesQuery(): Query

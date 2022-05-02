@@ -4,8 +4,6 @@
 
 {% import "_includes/forms" as forms %}
 
-{% set headlessMode = craft.app.config.general.headlessMode %}
-
 {% block content %}
     {{ actionInput('productlabels/product-labels/save-product-label-type') }}
     {{ redirectInput('settings/productlabels') }}
@@ -36,8 +34,6 @@
         errors: productLabelType.getErrors('handle'),
         required: true
     }) }}
-
-    <hr>
 
     {{ forms.fieldLayoutDesignerField({
         fieldLayout: productLabelType.getFieldLayout(),

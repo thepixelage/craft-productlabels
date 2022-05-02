@@ -7,12 +7,16 @@ use craft\behaviors\FieldLayoutBehavior;
 use craft\db\Table;
 use craft\helpers\Db;
 use craft\helpers\StringHelper;
+use craft\models\FieldLayout;
 use craft\validators\HandleValidator;
 use craft\validators\UniqueValidator;
 use Exception;
 use thepixelage\productlabels\elements\ProductLabel;
 use thepixelage\productlabels\records\ProductLabelType as ProductLabelTypeRecord;
 
+/**
+ * @method FieldLayout getFieldLayout
+ */
 class ProductLabelType extends Model
 {
     public ?int $id = null;
