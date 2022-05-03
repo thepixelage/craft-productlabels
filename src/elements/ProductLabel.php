@@ -373,4 +373,30 @@ class ProductLabel extends Element
 
         parent::afterSave($isNew);
     }
+
+    public static function gqlTypeNameByContext(mixed $context): string
+    {
+        /** @var ProductLabelType $context */
+        return $context->handle . '_ProductLabel';
+    }
+
+    public static function gqlScopesByContext(mixed $context): array
+    {
+        /** @var ProductLabelType $context */
+        return ['productlabeltypes.' . $context->uid];
+    }
+
+    public static function gqlMutationNameByContext(mixed $context): string
+    {
+        /** @var ProductLabelType $context */
+        return 'save_' . $context->handle . '_ProductLabel';
+    }
+
+    /**
+     * @throws InvalidConfigException
+     */
+    public function getGqlTypeName(): string
+    {
+        return static::gqlTypeNameByContext($this->getType());
+    }
 }

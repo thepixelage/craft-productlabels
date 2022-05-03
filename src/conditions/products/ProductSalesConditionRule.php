@@ -13,11 +13,11 @@ use craft\helpers\ArrayHelper;
 use yii\base\InvalidConfigException;
 use yii\base\NotSupportedException;
 
-class RelatedSaleConditionRule extends BaseMultiSelectConditionRule implements ElementConditionRuleInterface
+class ProductSalesConditionRule extends BaseMultiSelectConditionRule implements ElementConditionRuleInterface
 {
     public function getLabel(): string
     {
-        return Craft::t('app', 'Related Sales');
+        return Craft::t('app', 'Product Sales');
     }
 
     public function getExclusiveQueryParams(): array
@@ -40,7 +40,7 @@ class RelatedSaleConditionRule extends BaseMultiSelectConditionRule implements E
      */
     public function modifyQuery(ElementQueryInterface $query): void
     {
-        throw new NotSupportedException('Related Sales condition rule does not support element queries.');
+        throw new NotSupportedException('Product Sales condition rule does not support element queries.');
     }
 
     /**

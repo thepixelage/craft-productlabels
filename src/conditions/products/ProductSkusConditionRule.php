@@ -13,11 +13,11 @@ use craft\helpers\ArrayHelper;
 use yii\base\InvalidConfigException;
 use yii\base\NotSupportedException;
 
-class SkuConditionRule extends BaseMultiSelectConditionRule implements ElementConditionRuleInterface
+class ProductSkusConditionRule extends BaseMultiSelectConditionRule implements ElementConditionRuleInterface
 {
     public function getLabel(): string
     {
-        return Craft::t('app', 'SKU');
+        return Craft::t('app', 'Product SKUs');
     }
 
     public function getExclusiveQueryParams(): array
@@ -39,7 +39,7 @@ class SkuConditionRule extends BaseMultiSelectConditionRule implements ElementCo
      */
     public function modifyQuery(ElementQueryInterface $query): void
     {
-        throw new NotSupportedException('SKU condition rule does not support element queries.');
+        throw new NotSupportedException('Product SKUs condition rule does not support element queries.');
     }
 
     /**

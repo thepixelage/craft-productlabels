@@ -7,14 +7,21 @@ use craft\base\Model;
 use craft\commerce\elements\Product;
 use craft\events\DefineBehaviorsEvent;
 use craft\events\DefineFieldLayoutFieldsEvent;
+use craft\events\DefineGqlTypeFieldsEvent;
 use craft\events\RegisterComponentTypesEvent;
+use craft\events\RegisterGqlSchemaComponentsEvent;
+use craft\events\RegisterGqlTypesEvent;
 use craft\events\RegisterUrlRulesEvent;
 use craft\fieldlayoutelements\TitleField;
+use craft\gql\TypeManager;
 use craft\models\FieldLayout;
 use craft\services\Elements;
+use craft\services\Gql;
 use craft\web\UrlManager;
+use GraphQL\Type\Definition\Type;
 use thepixelage\productlabels\behaviors\ProductBehavior;
 use thepixelage\productlabels\elements\ProductLabel;
+use thepixelage\productlabels\gql\interfaces\elements\ProductLabel as ProductLabelInterface;
 use thepixelage\productlabels\models\Settings;
 use thepixelage\productlabels\services\ProductLabels;
 use yii\base\Event;
@@ -49,6 +56,7 @@ class Plugin extends \craft\base\Plugin
         $this->registerFieldLayoutStandardFields();
         $this->registerCpRoutes();
         $this->registerProjectConfigChangeListeners();
+        $this->registerGql();
     }
 
     protected function createSettingsModel(): ?Model
@@ -110,5 +118,53 @@ class Plugin extends \craft\base\Plugin
             ->onAdd('productLabelTypes.{uid}', [$this->productLabels, 'handleChangedProductLabelType'])
             ->onUpdate('productLabelTypes.{uid}', [$this->productLabels, 'handleChangedProductLabelType'])
             ->onRemove('productLabelTypes.{uid}', [$this->productLabels, 'handleDeletedProductLabelType']);
+    }
+
+    private function registerGql()
+    {
+        Event::on(
+            Gql::class,
+            Gql::EVENT_REGISTER_GQL_TYPES,
+            function(RegisterGqlTypesEvent $event) {
+                $event->types[] = ProductLabelInterface::class;
+            }
+        );
+
+        Event::on(
+            TypeManager::class,
+            TypeManager::EVENT_DEFINE_GQL_TYPE_FIELDS,
+            function(DefineGqlTypeFieldsEvent $event) {
+                if ($event->typeName == 'ProductInterface') {
+                    $event->fields['productLabels'] = [
+                        'name' => 'productLabels',
+                        'type' => Type::listOf(ProductLabelInterface::getType()),
+                        'resolve' => function($source, $arguments, $context, $resolveInfo) {
+                            return $source->productLabels;
+                        }
+                    ];
+                }
+            }
+        );
+
+        Event::on(
+            Gql::class,
+            Gql::EVENT_REGISTER_GQL_SCHEMA_COMPONENTS,
+            function(RegisterGqlSchemaComponentsEvent $event) {
+                $productLabelTypes = $this->productLabels->getAllTypes();
+
+                if (!empty($productLabelTypes)) {
+                    $queryComponents = [];
+                    foreach ($productLabelTypes as $productLabelType) {
+                        $queryComponents['productlabeltypes.' . $productLabelType->uid . ':read'] = [
+                            'label' => 'View fragment type - ' . $productLabelType->name
+                        ];
+                    }
+
+                    $event->queries = array_merge($event->queries, [
+                        'Product Labels' => $queryComponents,
+                    ]);
+                }
+            }
+        );
     }
 }
