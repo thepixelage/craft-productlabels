@@ -29,7 +29,9 @@ class Install extends Migration
             $this->createTable(Table::PRODUCTLABELS, [
                 'id' => $this->integer()->notNull(),
                 'typeId' => $this->integer()->notNull(),
-                'conditions' => $this->text(),
+                'productCondition' => $this->text(),
+                'dateFrom' => $this->dateTime()->defaultValue(null),
+                'dateTo' => $this->dateTime()->defaultValue(null),
                 'dateCreated' => $this->dateTime()->notNull(),
                 'dateUpdated' => $this->dateTime()->notNull(),
                 'uid' => $this->uid(),

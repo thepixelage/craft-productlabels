@@ -4,6 +4,8 @@ namespace thepixelage\productlabels;
 
 use Craft;
 use craft\base\Model;
+use craft\commerce\elements\Product;
+use craft\events\DefineBehaviorsEvent;
 use craft\events\DefineFieldLayoutFieldsEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterUrlRulesEvent;
@@ -11,6 +13,7 @@ use craft\fieldlayoutelements\TitleField;
 use craft\models\FieldLayout;
 use craft\services\Elements;
 use craft\web\UrlManager;
+use thepixelage\productlabels\behaviors\ProductBehavior;
 use thepixelage\productlabels\elements\ProductLabel;
 use thepixelage\productlabels\models\Settings;
 use thepixelage\productlabels\services\ProductLabels;
@@ -40,6 +43,7 @@ class Plugin extends \craft\base\Plugin
         $this->hasCpSection = true;
         $this->hasCpSettings = false;
 
+        $this->registerBehaviors();
         $this->registerServices();
         $this->registerElementTypes();
         $this->registerFieldLayoutStandardFields();
@@ -50,6 +54,17 @@ class Plugin extends \craft\base\Plugin
     protected function createSettingsModel(): ?Model
     {
         return new Settings();
+    }
+
+    private function registerBehaviors()
+    {
+        Event::on(
+            Product::class,
+            Model::EVENT_DEFINE_BEHAVIORS,
+            function (DefineBehaviorsEvent $event) {
+                $event->behaviors[] = ProductBehavior::class;
+            }
+        );
     }
 
     private function registerServices()

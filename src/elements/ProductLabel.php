@@ -4,7 +4,6 @@ namespace thepixelage\productlabels\elements;
 
 use Craft;
 use craft\base\Element;
-use craft\commerce\elements\conditions\customers\DiscountCustomerCondition;
 use craft\controllers\ElementIndexesController;
 use craft\elements\actions\Delete;
 use craft\elements\actions\Duplicate;
@@ -15,10 +14,13 @@ use craft\elements\conditions\ElementConditionInterface;
 use craft\elements\db\ElementQuery;
 use craft\elements\db\ElementQueryInterface;
 use craft\elements\User;
+use craft\helpers\DateTimeHelper;
+use craft\helpers\Json;
 use craft\helpers\UrlHelper;
 use craft\models\FieldLayout;
 use craft\services\ElementSources;
 use DateTime;
+use DateTimeZone;
 use thepixelage\productlabels\conditions\ProductLabelProductCondition;
 use thepixelage\productlabels\elements\db\ProductLabelQuery;
 use thepixelage\productlabels\models\ProductLabelType;
@@ -35,11 +37,9 @@ use yii\web\Response;
 class ProductLabel extends Element
 {
     public ?int $typeId = null;
-    public bool $allPurchasables = false;
-    public bool $allCategories = false;
-    public string $categoryRelationshipType = 'element';
     public ?DateTime $dateFrom = null;
     public ?DateTime $dateTo = null;
+    private ElementConditionInterface|null $_productCondition = null;
 
     public function __construct($config = [])
     {
@@ -85,13 +85,22 @@ class ProductLabel extends Element
         return $condition;
     }
 
-    public function getCustomerCondition(): ElementConditionInterface
+    /**
+     * @throws InvalidConfigException
+     */
+    public function setProductCondition(ElementConditionInterface|string|array|null $condition): void
     {
-        $condition = $this->_customerCondition ?? new DiscountCustomerCondition();
-        $condition->mainTag = 'div';
-        $condition->name = 'customerCondition';
+        if (is_string($condition)) {
+            $condition = Json::decodeIfJson($condition);
+        }
 
-        return $condition;
+        if (!$condition instanceof ElementConditionInterface) {
+            $condition['class'] = ProductLabelProductCondition::class;
+            $condition = Craft::$app->getConditions()->createCondition($condition);
+        }
+        $condition->forProjectConfig = false;
+
+        $this->_productCondition = $condition;
     }
 
     public static function find(): ElementQueryInterface
@@ -338,6 +347,7 @@ class ProductLabel extends Element
     /**
      * @throws Exception
      * @throws \yii\base\Exception
+     * @throws \Exception
      */
     public function afterSave(bool $isNew): void
     {
@@ -346,11 +356,17 @@ class ProductLabel extends Element
                 ->insert('{{%productlabels}}', [
                     'id' => $this->id,
                     'typeId' => $this->typeId,
+                    'productCondition' => Json::encode($this->getProductCondition()->getConfig()),
+                    'dateFrom' => $this->dateFrom,
+                    'dateTo' => $this->dateTo,
                 ])
                 ->execute();
         } else {
             Craft::$app->db->createCommand()
                 ->update('{{%productlabels}}', [
+                    'productCondition' => Json::encode($this->getProductCondition()->getConfig()),
+                    'dateFrom' => $this->dateFrom ? $this->dateFrom->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s') : null,
+                    'dateTo' => $this->dateTo ? $this->dateTo->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s') : null,
                 ], ['id' => $this->id])
                 ->execute();
         }

@@ -4,6 +4,7 @@ namespace thepixelage\productlabels\services;
 
 use Craft;
 use craft\base\Component;
+use craft\commerce\elements\Product;
 use craft\db\Query;
 use craft\errors\BusyResourceException;
 use craft\errors\StaleResourceException;
@@ -179,6 +180,20 @@ class ProductLabels extends Component
         Craft::$app->db->createCommand()
             ->delete(Table::PRODUCTLABELTYPES, ['id' => $type->id])
             ->execute();
+    }
+
+    public function matchConditions(ProductLabel $productLabel, Product|\yii\base\Component $product): bool
+    {
+        $productCondition = $productLabel->getProductCondition();
+        if (count($productCondition->getConditionRules()) > 0) {
+            foreach ($productCondition->getConditionRules() as $rule) {
+                if (!$rule->matchElement($product)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     private function getProductLabelTypeRecord(string $uid): ProductLabelTypeRecord

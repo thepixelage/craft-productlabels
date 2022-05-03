@@ -102,7 +102,6 @@
 {% if tabs is not defined %}
     {% set tabs = form.getTabMenu() %}
     {% set tabs = tabs|merge([
-        {'label':'Matching Items'|t('productlabels'),'url':'#matching-items','class':''},
         {'label':'Conditions'|t('productlabels'),'url':'#conditions','class':''}
     ]) %}
 {% endif %}
@@ -317,77 +316,6 @@
 
     <div id="fields">
         {{ form.render()|raw }}
-
-        <div id="matching-items" class="hidden">
-
-            {{ forms.lightswitchField({
-                label: "All purchasables"|t('commerce'),
-                id: 'allPurchasables',
-                name: 'allPurchasables',
-                reverseToggle: '#matching-items-purchasables',
-                on: productLabel.allPurchasables ? true : false,
-                errors: productLabel.getErrors('allPurchasables')
-            }) }}
-
-            <div id="matching-items-purchasables" {% if productLabel.allPurchasables %}class="hidden"{% endif %}>
-                {% for purchasableType in purchasableTypes %}
-                    {{ forms.elementSelectField({
-                        id: 'purchasables-'~purchasableType.elementType|id,
-                        label: purchasableType.name ~ ' ' ~ '(Purchasable)'|t('commerce'),
-                        name: 'purchasables['~purchasableType.elementType~']',
-                        elements: purchasables[purchasableType.elementType] ?? null,
-                        elementType: purchasableType.elementType,
-                        limit: null,
-                        instructions: '{type} for which this sale will be applicable to.'|t('commerce', {
-                            type: purchasableType.name
-                        }),
-                        errors: productLabel.getErrors('purchasables-'~purchasableType.elementType|replace('\\','-'))
-                    }) }}
-                {% endfor %}
-            </div>
-
-            {{ forms.lightswitchField({
-                label: "All categories"|t('commerce'),
-                id: 'allCategories',
-                name: 'allCategories',
-                reverseToggle: '#matching-items-categories',
-                on: productLabel.allCategories ? true : false,
-                errors: productLabel.getErrors('allCategories')
-            }) }}
-
-            <div id="matching-items-categories" {% if productLabel.allCategories %}class="hidden"{% endif %}>
-
-                {{ forms.elementSelectField({
-                    id: 'categories',
-                    label: 'Categories'|t('commerce'),
-                    name: 'categories',
-                    elements: categories ? categories : null,
-                    elementType: categoryElementType,
-                    limit: null,
-                    instructions: "Categories that the purchasables must be related to."|t('commerce'),
-                    errors: productLabel.getErrors('categoryIds'),
-                }) }}
-
-                <a class="fieldtoggle {% if (productLabel.categoryRelationshipType != 'element') %}expanded{% endif %}"
-                   data-target="categoryRelationshipType-advanced">Advanced</a>
-
-                <div id="categoryRelationshipType-advanced"
-                     class="{% if (productLabel.categoryRelationshipType == 'element') %}hidden{% endif %}">
-                    {{ forms.selectField({
-                        id: 'categoryRelationshipType',
-                        name: 'categoryRelationshipType',
-                        label: 'Categories Relationship Type'|t('commerce'),
-                        instructions: "How the Purchasables and Categories are related, which determines the matching items. See [Relations Terminology]({link})."|t('commerce', {
-                            link: 'https://craftcms.com/docs/4.x/relations.html#terminology',
-                        }),
-                        options: categoryRelationshipType,
-                        value: productLabel.categoryRelationshipType,
-                        errors: productLabel.getErrors('categoryRelationshipType')
-                    }) }}
-                </div>
-
-            </div>
-        </div>
 
         <div id="conditions" class="hidden">
 

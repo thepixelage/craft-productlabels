@@ -7,6 +7,7 @@ use craft\base\Element;
 use craft\elements\Category;
 use craft\errors\ElementNotFoundException;
 use craft\errors\SiteNotFoundException;
+use craft\helpers\DateTimeHelper;
 use craft\helpers\ElementHelper;
 use craft\helpers\Json;
 use craft\helpers\UrlHelper;
@@ -218,8 +219,6 @@ class ProductLabelsController extends Controller
             } else {
                 $productLabel = new ProductLabel();
                 $productLabel->typeId = $productLabelType->id;
-                $productLabel->allPurchasables = true;
-                $productLabel->allCategories = true;
             }
         }
 
@@ -276,19 +275,6 @@ JS;
             'isNew' => ($productLabel->id == null),
             'sourceId' => $productLabel->getCanonicalId(),
             'sidebarHtml' => $productLabel->getSidebarHtml(false),
-            'purchasableTypes' => array_map(function ($purchasableType) {
-                return [
-                    'name' => $purchasableType::displayName(),
-                    'elementType' => $purchasableType,
-                ];
-            }, $purchasableTypes),
-            'categories' => [],
-            'categoryElementType' => Category::class,
-            'categoryRelationshipType' => [
-                'sourceElement' => Craft::t('commerce', 'Source - The category relationship field is on the purchasable'),
-                'targetElement' => Craft::t('commerce', 'Target - The purchasable relationship field is on the category'),
-                'element' => Craft::t('commerce', 'Either (Default) - The relationship field is on the purchasable or the category'),
-            ],
         ]);
     }
 
@@ -297,6 +283,7 @@ JS;
      * @throws ForbiddenHttpException
      * @throws BadRequestHttpException
      * @throws InvalidConfigException
+     * @throws Exception
      */
     public function actionSave(): ?Response
     {
@@ -328,8 +315,16 @@ JS;
         $productLabel->siteId = $site->id;
         $productLabel->title = $this->request->getBodyParam('title', $productLabel->title);
         $productLabel->slug = $this->request->getBodyParam('slug', $productLabel->slug);
+
         $productLabel->enabled = (bool)$this->request->getBodyParam('enabled', $productLabel->enabled);
         $productLabel->setFieldValuesFromRequest($this->request->getParam('fieldsLocation', 'fields'));
+
+        $productLabel->setProductCondition($this->request->getBodyParam('productCondition'));
+
+        $dateFromParams = $this->request->getBodyParam('dateFrom');
+        $dateToParams = $this->request->getBodyParam('dateTo');
+        $productLabel->dateFrom = $dateFromParams['date'] ? DateTimeHelper::toDateTime($dateFromParams) : null;
+        $productLabel->dateTo = $dateToParams['date'] ? DateTimeHelper::toDateTime($dateToParams) : null;
 
         $enabledForSite = $this->enabledForSiteValue();
         if (is_array($enabledForSite)) {

@@ -4,7 +4,7 @@ namespace thepixelage\productlabels\conditions;
 
 use craft\elements\conditions\ElementCondition;
 use craft\errors\InvalidTypeException;
-use thepixelage\productlabels\conditions\products\SaleConditionRule;
+use thepixelage\productlabels\conditions\products\RelatedSaleConditionRule;
 use thepixelage\productlabels\conditions\products\SkuConditionRule;
 
 class ProductLabelProductCondition extends ElementCondition
@@ -16,7 +16,7 @@ class ProductLabelProductCondition extends ElementCondition
     {
         return array_merge(parent::conditionRuleTypes(), [
             SkuConditionRule::class,
-            SaleConditionRule::class,
+            RelatedSaleConditionRule::class,
         ]);
     }
 }

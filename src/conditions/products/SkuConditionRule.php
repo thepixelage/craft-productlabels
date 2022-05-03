@@ -11,6 +11,7 @@ use craft\elements\conditions\ElementConditionRuleInterface;
 use craft\elements\db\ElementQueryInterface;
 use craft\helpers\ArrayHelper;
 use yii\base\InvalidConfigException;
+use yii\base\NotSupportedException;
 
 class SkuConditionRule extends BaseMultiSelectConditionRule implements ElementConditionRuleInterface
 {
@@ -30,16 +31,23 @@ class SkuConditionRule extends BaseMultiSelectConditionRule implements ElementCo
     {
         $products = Product::find()->all();
 
-        return ArrayHelper::map($products, 'uid', 'defaultSku');
+        return ArrayHelper::map($products, 'defaultSku', 'defaultSku');
     }
 
+    /**
+     * @throws NotSupportedException
+     */
     public function modifyQuery(ElementQueryInterface $query): void
     {
-
+        throw new NotSupportedException('SKU condition rule does not support element queries.');
     }
 
+    /**
+     * @throws InvalidConfigException
+     */
     public function matchElement(ElementInterface $element): bool
     {
-        return true;
+        /** @var Product $element */
+        return $this->matchValue($element->defaultSku);
     }
 }
