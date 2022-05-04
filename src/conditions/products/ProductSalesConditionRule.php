@@ -22,7 +22,7 @@ class ProductSalesConditionRule extends BaseMultiSelectConditionRule implements 
 
     public function getExclusiveQueryParams(): array
     {
-        return ['sale', 'saleId'];
+        return ['saleIds'];
     }
 
     /**

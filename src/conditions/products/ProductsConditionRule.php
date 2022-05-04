@@ -6,32 +6,35 @@ use Craft;
 use craft\base\conditions\BaseMultiSelectConditionRule;
 use craft\base\ElementInterface;
 use craft\commerce\elements\Product;
-use craft\commerce\Plugin as Commerce;
 use craft\elements\conditions\ElementConditionRuleInterface;
 use craft\elements\db\ElementQueryInterface;
 use craft\helpers\ArrayHelper;
 use yii\base\InvalidConfigException;
 use yii\base\NotSupportedException;
 
-class ProductSkusConditionRule extends BaseMultiSelectConditionRule implements ElementConditionRuleInterface
+class ProductsConditionRule extends BaseMultiSelectConditionRule implements ElementConditionRuleInterface
 {
     public function getLabel(): string
     {
-        return Craft::t('app', 'Product SKUs');
+        return Craft::t('app', 'Products');
     }
 
     public function getExclusiveQueryParams(): array
     {
-        return ['sku'];
+        return ['productIds'];
     }
 
-    /**
-     */
     protected function options(): array
     {
-        $products = Product::find()->all();
+        $allProducts = Product::find()->orderBy('dateUpdated desc, title asc, defaultSku asc')->all();
+        $products = array_map(function ($product) {
+            return [
+                'id' => $product->id,
+                'label' => "$product->defaultSku – $product->title",
+            ];
+        }, $allProducts);
 
-        return ArrayHelper::map($products, 'defaultSku', 'defaultSku');
+        return ArrayHelper::map($products, 'id', 'label');
     }
 
     /**
@@ -39,7 +42,7 @@ class ProductSkusConditionRule extends BaseMultiSelectConditionRule implements E
      */
     public function modifyQuery(ElementQueryInterface $query): void
     {
-        throw new NotSupportedException('Product SKUs condition rule does not support element queries.');
+        throw new NotSupportedException('Products condition rule does not support element queries.');
     }
 
     /**
