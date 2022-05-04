@@ -12,23 +12,9 @@ class Install extends Migration
      */
     public function safeUp(): bool
     {
-        if (!$this->db->tableExists(Table::PRODUCTLABELTYPES)) {
-            $this->createTable(Table::PRODUCTLABELTYPES, [
-                'id' => $this->primaryKey(),
-                'name' => $this->string()->notNull(),
-                'handle' => $this->string()->notNull(),
-                'fieldLayoutId' => $this->integer(),
-                'dateCreated' => $this->dateTime()->notNull(),
-                'dateDeleted' => $this->dateTime(),
-                'dateUpdated' => $this->dateTime()->notNull(),
-                'uid' => $this->uid(),
-            ]);
-        }
-
         if (!$this->db->tableExists(Table::PRODUCTLABELS)) {
             $this->createTable(Table::PRODUCTLABELS, [
                 'id' => $this->integer()->notNull(),
-                'typeId' => $this->integer()->notNull(),
                 'productCondition' => $this->text(),
                 'dateFrom' => $this->dateTime()->defaultValue(null),
                 'dateTo' => $this->dateTime()->defaultValue(null),
@@ -53,10 +39,6 @@ class Install extends Migration
     {
         if ($this->db->tableExists(Table::PRODUCTLABELS)) {
             $this->dropTable(Table::PRODUCTLABELS);
-        }
-
-        if ($this->db->tableExists(Table::PRODUCTLABELTYPES)) {
-            $this->dropTable(Table::PRODUCTLABELTYPES);
         }
 
         return true;

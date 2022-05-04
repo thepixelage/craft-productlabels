@@ -4,19 +4,15 @@ namespace thepixelage\productlabels\controllers;
 
 use Craft;
 use craft\base\Element;
-use craft\elements\Category;
+use craft\commerce\Plugin as Commerce;
 use craft\errors\ElementNotFoundException;
 use craft\errors\SiteNotFoundException;
 use craft\helpers\DateTimeHelper;
-use craft\helpers\ElementHelper;
 use craft\helpers\Json;
-use craft\helpers\UrlHelper;
 use craft\models\Site;
 use craft\web\Controller;
 use Exception;
 use thepixelage\productlabels\elements\ProductLabel;
-use thepixelage\productlabels\models\ProductLabelType;
-use thepixelage\productlabels\Plugin;
 use Throwable;
 use yii\base\InvalidConfigException;
 use yii\web\BadRequestHttpException;
@@ -24,161 +20,15 @@ use yii\web\ForbiddenHttpException;
 use yii\web\NotFoundHttpException;
 use yii\web\Response;
 
-use craft\commerce\Plugin as Commerce;
-
 class ProductLabelsController extends Controller
 {
-    /**
-     * @throws ForbiddenHttpException
-     */
-    public function actionTypeIndex(): Response
+    public function actionIndex(?string $typeHandle = null): Response
     {
-        $this->requireAdmin();
-
-        $types = Plugin::getInstance()->productLabels->getAllTypes();
-
-        return $this->renderTemplate('productlabels/settings/types/index', [
-            'productLabelTypes' => $types,
-        ]);
-    }
-
-    /**
-     * @throws ForbiddenHttpException
-     * @throws NotFoundHttpException
-     */
-    public function actionEditProductLabelType(?int $typeId = null, ?ProductLabelType $productLabelType = null): Response
-    {
-        $this->requireAdmin();
-
-        $variables = [];
-
-        // Breadcrumbs
-        $variables['crumbs'] = [
-            [
-                'label' => Craft::t('app', 'Settings'),
-                'url' => UrlHelper::url('settings'),
-            ],
-            [
-                'label' => Craft::t('app', 'Product Labels'),
-                'url' => UrlHelper::url('settings/productlabels'),
-            ],
-        ];
-
-        $variables['isNewType'] = false;
-
-        if ($typeId !== null) {
-            if ($productLabelType === null) {
-                $productLabelType = Plugin::getInstance()->productLabels->getTypeById($typeId);
-
-                if (!$productLabelType) {
-                    throw new NotFoundHttpException('Product label type not found');
-                }
-            }
-
-            $variables['title'] = trim($productLabelType->name) ?: Craft::t('app', 'Edit Product Label Type');
-        } else {
-            if ($productLabelType === null) {
-                $productLabelType = new ProductLabelType();
-                $variables['isNewType'] = true;
-            }
-
-            $variables['title'] = Craft::t('app', 'Create a new product label type');
-        }
-
-        $variables['typeId'] = $typeId;
-        $variables['productLabelType'] = $productLabelType;
-
-        return $this->renderTemplate('productlabels/settings/types/_edit', $variables);
-    }
-
-    /**
-     * @throws ForbiddenHttpException
-     * @throws NotFoundHttpException
-     * @throws BadRequestHttpException
-     * @throws Exception
-     */
-    public function actionSaveProductLabelType(): ?Response
-    {
-        $this->requirePostRequest();
-        $this->requireAdmin();
-
-        $typeId = $this->request->getBodyParam('typeId');
-
-        if ($typeId) {
-            $type = Plugin::getInstance()->productLabels->getTypeById($typeId);
-
-            if (!$type) {
-                throw new NotFoundHttpException('Product label type not found');
-            }
-        } else {
-            $type = new ProductLabelType();
-        }
-
-        $type->name = $this->request->getBodyParam('name');
-        $type->handle = $this->request->getBodyParam('handle');
-
-        $fieldLayout = Craft::$app->getFields()->assembleLayoutFromPost();
-        $fieldLayout->type = ProductLabel::class;
-        $type->setFieldLayout($fieldLayout);
-
-        if (!Plugin::getInstance()->productLabels->saveType($type)) {
-            $this->setFailFlash(Craft::t('app', 'Couldn’t save the product label type.'));
-
-            Craft::$app->getUrlManager()->setRouteParams([
-                'productLabelType' => $type,
-            ]);
-
-            return null;
-        }
-
-        $this->setSuccessFlash(Craft::t('app', 'Product label type saved.'));
-        return $this->redirectToPostedUrl($type);
-    }
-
-    /**
-     * @throws ForbiddenHttpException
-     * @throws BadRequestHttpException
-     */
-    public function actionDeleteProductLabelType(): ?Response
-    {
-        $this->requirePostRequest();
-        $this->requireAcceptsJson();
-        $this->requireAdmin();
-
-        $typeId = $this->request->getRequiredBodyParam('id');
-        Plugin::getInstance()->productLabels->deleteTypeById($typeId);
-
-        return $this->asSuccess();
-    }
-
-    /**
-     * @throws ForbiddenHttpException
-     */
-    public function actionProductLabelIndex(?string $typeHandle = null): Response
-    {
-        $types = Plugin::getInstance()->productLabels->getEditableTypes();
-
-        if (empty($types)) {
-            throw new ForbiddenHttpException('User not permitted to edit product labels');
-        }
-
         $this->view->registerTranslations('app', [
             'New product label',
         ]);
 
-        $indexJsUrl = Craft::$app->assetManager->getPublishedUrl(
-            '@thepixelage/productlabels/resources/js/ProductLabelIndex.js',
-            true
-        );
-
-        $productLabelTypesJson = Json::encode($types, JSON_UNESCAPED_UNICODE);
-
-        return $this->renderTemplate('productlabels/productlabels/_index', [
-            'typeHandle' => $typeHandle,
-            'types' => $types,
-            'indexJsUrl' => $indexJsUrl,
-            'productLabelTypesJson' => $productLabelTypesJson,
-        ]);
+        return $this->renderTemplate('productlabels/productlabels/_index');
     }
 
     /**
@@ -189,10 +39,8 @@ class ProductLabelsController extends Controller
      * @throws InvalidConfigException
      * @throws \yii\base\Exception
      */
-    public function actionEdit(string $typeHandle, ?int $productLabelId = null, ?string $site = null, ?ProductLabel $productLabel = null): Response
+    public function actionEdit(?int $productLabelId = null, ?string $site = null, ?ProductLabel $productLabel = null): Response
     {
-        $productLabelType = Plugin::getInstance()->productLabels->getTypeByHandle($typeHandle);
-
         if ($site !== null) {
             $siteHandle = $site;
             $site = Craft::$app->getSites()->getSiteByHandle($siteHandle);
@@ -208,7 +56,6 @@ class ProductLabelsController extends Controller
             if ($productLabelId) {
                 $productLabel = ProductLabel::find()
                     ->id($productLabelId)
-                    ->structureId($productLabelType->structureId)
                     ->site($site)
                     ->status(null)
                     ->one();
@@ -218,12 +65,11 @@ class ProductLabelsController extends Controller
                 }
             } else {
                 $productLabel = new ProductLabel();
-                $productLabel->typeId = $productLabelType->id;
             }
         }
 
         $this->enforceSitePermission($site);
-        $this->enforceEditProductLabelPermissions($productLabel);
+//        $this->enforceEditProductLabelPermissions($productLabel);
 
         if (Craft::$app->getIsMultiSite()) {
             $siteIds = array_map(function ($siteId) {
@@ -268,7 +114,6 @@ JS;
 
         return $this->renderTemplate('productlabels/productlabels/_edit', [
             'productLabel' => $productLabel,
-            'productLabelType' => $productLabelType,
             'site' => $site,
             'siteIds' => $siteIds,
             'canUpdateSource' => true,
@@ -290,10 +135,8 @@ JS;
         $this->requirePostRequest();
 
         $productLabelId = $this->request->getBodyParam('sourceId');
-        $productLabelTypeId = $this->request->getBodyParam('productLabelTypeId');
         $siteId = $this->request->getBodyParam('siteId');
 
-        $type = Plugin::getInstance()->productLabels->getTypeById($productLabelTypeId);
         if ($siteId) {
             $site = Craft::$app->getSites()->getSiteById($siteId);
         } else {
@@ -303,7 +146,6 @@ JS;
         if ($productLabelId) {
             $productLabel = ProductLabel::find()
                 ->id($productLabelId)
-                ->structureId($type->structureId)
                 ->site($site)
                 ->status(null)
                 ->one();
@@ -311,7 +153,6 @@ JS;
             $productLabel = new ProductLabel();
         }
 
-        $productLabel->typeId = $type->id;
         $productLabel->siteId = $site->id;
         $productLabel->title = $this->request->getBodyParam('title', $productLabel->title);
         $productLabel->slug = $this->request->getBodyParam('slug', $productLabel->slug);
@@ -336,7 +177,7 @@ JS;
         $productLabel->setEnabledForSite($enabledForSite ?? $productLabel->getEnabledForSite());
 
         $this->enforceSitePermission($productLabel->getSite());
-        $this->enforceEditProductLabelPermissions($productLabel);
+//        $this->enforceEditProductLabelPermissions($productLabel);
 
         if ($productLabel->getEnabledForSite()) {
             $productLabel->setScenario(Element::SCENARIO_LIVE);

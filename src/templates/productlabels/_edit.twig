@@ -5,10 +5,6 @@
     {
         'label': "Product Labels"|t('productlabels'),
         'url': cpUrl('productlabels'),
-    },
-    {
-        'label': productLabelType.name,
-        'url': cpUrl('productlabels/' ~ productLabelType.handle),
     }
 ] %}
 
@@ -18,7 +14,7 @@
     {% set title = productLabel.title %}
 {% endif %}
 
-{% set redirectUrl = "productlabels/#{productLabelType.handle}" %}
+{% set redirectUrl = "productlabels" %}
 {% set canUpdateSource = true %}
 {% set canDeleteSource = true %}
 {% set canDeleteForSite = true %}
@@ -214,7 +210,7 @@
 
 {% block contextMenu %}
     {% if craft.app.getIsMultiSite() %}
-        {% set urlFormat = url("productlabels/#{productLabelType.handle}/#{craft.app.request.getSegment(3)}?site={handle}") %}
+        {% set urlFormat = url("productlabels/#{craft.app.request.getSegment(3)}?site={handle}") %}
         {% include "_elements/sitemenu.twig" with {
             siteIds: siteIds,
             selectedSiteId: productLabel.siteId,
@@ -305,7 +301,6 @@
 {% endblock %}
 
 {% block content %}
-    {{ hiddenInput('productLabelTypeId', productLabelType.id) }}
     {% if craft.app.getIsMultiSite() %}{{ hiddenInput('siteId', productLabel.siteId) }}{% endif %}
 
     {% if not isRevision %}

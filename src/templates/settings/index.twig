@@ -1,0 +1,25 @@
+{% extends '_layouts/cp' %}
+{% import '_includes/forms' as forms %}
+
+{% set title = 'Settings' %}
+{% set selectedSubnavItem = 'settings' %}
+{% set crumbs = [
+    { 'label': 'Product Labels', 'url': './' },
+    { 'label': 'Settings', 'url': './settings' },
+] %}
+
+{% block content %}
+    <form method="post" accept-charset="UTF-8" data-saveshortcut data-confirm-unload>
+        {{ actionInput('productlabels/settings/save') }}
+        {{ csrfInput() }}
+
+        {{ forms.fieldLayoutDesignerField({
+            first: true,
+            fieldLayout: fieldLayout ?? craft.app.fields.getLayoutByType('thepixelage\\productlabels\\elements\\ProductLabel'),
+        }) }}
+
+        <div class="buttons">
+            <button type="submit" class="btn submit">{{ 'Save'|t('app') }}</button>
+        </div>
+    </form>
+{% endblock %}

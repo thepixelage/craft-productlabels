@@ -9,11 +9,11 @@ use craft\events\DefineBehaviorsEvent;
 use craft\events\DefineFieldLayoutFieldsEvent;
 use craft\events\DefineGqlTypeFieldsEvent;
 use craft\events\RegisterComponentTypesEvent;
-use craft\events\RegisterGqlSchemaComponentsEvent;
 use craft\events\RegisterGqlTypesEvent;
 use craft\events\RegisterUrlRulesEvent;
 use craft\fieldlayoutelements\TitleField;
 use craft\gql\TypeManager;
+use craft\helpers\UrlHelper;
 use craft\models\FieldLayout;
 use craft\services\Elements;
 use craft\services\Gql;
@@ -22,7 +22,6 @@ use GraphQL\Type\Definition\Type;
 use thepixelage\productlabels\behaviors\ProductBehavior;
 use thepixelage\productlabels\elements\ProductLabel;
 use thepixelage\productlabels\gql\interfaces\elements\ProductLabel as ProductLabelInterface;
-use thepixelage\productlabels\models\Settings;
 use thepixelage\productlabels\services\ProductLabels;
 use yii\base\Event;
 
@@ -38,8 +37,6 @@ class Plugin extends \craft\base\Plugin
     public static Plugin $plugin;
 
     public string $schemaVersion = '1.0.0';
-    public bool $hasCpSettings = false;
-    public bool $hasCpSection = true;
 
     public function init()
     {
@@ -48,7 +45,7 @@ class Plugin extends \craft\base\Plugin
         self::$plugin = $this;
 
         $this->hasCpSection = true;
-        $this->hasCpSettings = false;
+        $this->hasCpSettings = true;
 
         $this->registerBehaviors();
         $this->registerServices();
@@ -59,9 +56,35 @@ class Plugin extends \craft\base\Plugin
         $this->registerGql();
     }
 
-    protected function createSettingsModel(): ?Model
+    public function getSettingsResponse(): mixed
     {
-        return new Settings();
+        $url = UrlHelper::cpUrl('productlabels/settings');
+
+        return \Craft::$app->controller->redirect($url);
+    }
+
+    public function getCpNavItem(): ?array
+    {
+        $subNavs = [];
+        $navItem = parent::getCpNavItem();
+        $currentUser = Craft::$app->getUser()->getIdentity();
+        $generalConfig = Craft::$app->getConfig()->getGeneral();
+
+        if ($generalConfig->allowAdminChanges && $currentUser->admin) {
+            $subNavs['fragments'] = [
+                'label' => Craft::t('fragments', "Product Labels"),
+                'url' => 'productlabels',
+            ];
+
+            $subNavs['settings'] = [
+                'label' => Craft::t('fragments', "Settings"),
+                'url' => 'productlabels/settings',
+            ];
+        }
+
+        return array_merge($navItem, [
+            'subnav' => $subNavs,
+        ]);
     }
 
     private function registerBehaviors()
@@ -115,9 +138,8 @@ class Plugin extends \craft\base\Plugin
     private function registerProjectConfigChangeListeners()
     {
         Craft::$app->projectConfig
-            ->onAdd('productLabelTypes.{uid}', [$this->productLabels, 'handleChangedProductLabelType'])
-            ->onUpdate('productLabelTypes.{uid}', [$this->productLabels, 'handleChangedProductLabelType'])
-            ->onRemove('productLabelTypes.{uid}', [$this->productLabels, 'handleDeletedProductLabelType']);
+            ->onAdd('productLabels', [$this->productLabels, 'handleChangedProductLabelConfig'])
+            ->onUpdate('productLabels', [$this->productLabels, 'handleChangedProductLabelConfig']);
     }
 
     private function registerGql()
@@ -142,27 +164,6 @@ class Plugin extends \craft\base\Plugin
                             return $source->productLabels;
                         }
                     ];
-                }
-            }
-        );
-
-        Event::on(
-            Gql::class,
-            Gql::EVENT_REGISTER_GQL_SCHEMA_COMPONENTS,
-            function(RegisterGqlSchemaComponentsEvent $event) {
-                $productLabelTypes = $this->productLabels->getAllTypes();
-
-                if (!empty($productLabelTypes)) {
-                    $queryComponents = [];
-                    foreach ($productLabelTypes as $productLabelType) {
-                        $queryComponents['productlabeltypes.' . $productLabelType->uid . ':read'] = [
-                            'label' => 'View fragment type - ' . $productLabelType->name
-                        ];
-                    }
-
-                    $event->queries = array_merge($event->queries, [
-                        'Product Labels' => $queryComponents,
-                    ]);
                 }
             }
         );

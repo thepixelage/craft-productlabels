@@ -1,20 +1,16 @@
 {% extends "_layouts/elementindex" %}
+
 {% set title = "Product Labels"|t('app') %}
 {% set elementType = 'thepixelage\\productlabels\\elements\\ProductLabel' %}
-{% set canHaveDrafts = false %}
 
-{% do view.registerJsFile(indexJsUrl, {
-    depends: 'craft\\web\\assets\\cp\\CpAsset'
-}) %}
-
-{% block initJs %}
-    Craft.productLabelTypes = {{ productLabelTypesJson|raw }};
-
-    {{ parent() }}
+{% block actionButton %}
+    {% if currentUser.can('registerUsers') %}
+        <a class="btn submit add icon" href="{{ url('productlabels/new') }}">{{ "New product label"|t('app') }}</a>
+    {% endif %}
 {% endblock %}
 
-{% if typeHandle is defined %}
+{% if source is defined %}
     {% js %}
-        window.defaultTypeHandle = '{{ typeHandle }}';
+        window.defaultSourceSlug = "{{ source|e('js') }}";
     {% endjs %}
 {% endif %}

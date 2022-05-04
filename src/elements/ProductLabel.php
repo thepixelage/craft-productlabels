@@ -14,17 +14,13 @@ use craft\elements\conditions\ElementConditionInterface;
 use craft\elements\db\ElementQuery;
 use craft\elements\db\ElementQueryInterface;
 use craft\elements\User;
-use craft\helpers\DateTimeHelper;
 use craft\helpers\Json;
 use craft\helpers\UrlHelper;
 use craft\models\FieldLayout;
-use craft\services\ElementSources;
 use DateTime;
 use DateTimeZone;
 use thepixelage\productlabels\conditions\ProductLabelProductCondition;
 use thepixelage\productlabels\elements\db\ProductLabelQuery;
-use thepixelage\productlabels\models\ProductLabelType;
-use thepixelage\productlabels\Plugin;
 use yii\base\InvalidConfigException;
 use yii\db\Exception;
 use yii\web\Response;
@@ -32,11 +28,9 @@ use yii\web\Response;
 /**
  * @property-read null|int $sourceId
  * @property-read string $gqlTypeName
- * @property-read ProductLabelType $type
  */
 class ProductLabel extends Element
 {
-    public ?int $typeId = null;
     public ?DateTime $dateFrom = null;
     public ?DateTime $dateTo = null;
     private ElementConditionInterface|null $_productCondition = null;
@@ -108,49 +102,23 @@ class ProductLabel extends Element
         return new ProductLabelQuery(static::class);
     }
 
-    /**
-     * @throws InvalidConfigException
-     */
     public function getFieldLayout(): ?FieldLayout
     {
-        return parent::getFieldLayout() ?? $this->getType()->getFieldLayout();
+        return Craft::$app->getFields()->getLayoutByType(self::class);
     }
 
     protected static function defineSources(string $context): array
     {
-        $sources = [];
-
-        if ($context === ElementSources::CONTEXT_INDEX) {
-            $types = Plugin::getInstance()->productLabels->getEditableTypes();
-        } else {
-            $types = Plugin::getInstance()->productLabels->getAllTypes();
-        }
-
-        foreach ($types as $type) {
-            $sources[] = [
-                'key' => 'type:' . $type->uid,
-                'label' => Craft::t('site', $type->name),
-                'data' => ['handle' => $type->handle],
-                'criteria' => ['typeId' => $type->id],
-                'structureId' => $type->structureId,
-                'structureEditable' => Craft::$app->getRequest()->getIsConsoleRequest() || Craft::$app->getUser()->checkPermission("viewProductLabels:$type->uid"),
-            ];
-        }
-
-        return $sources;
-    }
-
-    protected static function defineFieldLayouts(string $source): array
-    {
-        $fieldLayouts = [];
-        if (
-            preg_match('/^type:(.+)$/', $source, $matches) &&
-            ($type = Plugin::getInstance()->productLabels->getTypeByUid($matches[1]))
-        ) {
-            $fieldLayouts[] = $type->getFieldLayout();
-        }
-
-        return $fieldLayouts;
+        return [
+            [
+                'key' => '*',
+                'label' => Craft::t('app', 'All product labels'),
+                'hasThumbs' => false,
+                'data' => [
+                    'slug' => 'all',
+                ],
+            ],
+        ];
     }
 
     protected static function defineActions(string $source): array
@@ -164,33 +132,24 @@ class ProductLabel extends Element
             $elementQuery = null;
         }
 
-        // Get the type we need to check permissions on
-        if (preg_match('/^type:(\d+)$/', $source, $matches)) {
-            $type = Plugin::getInstance()->productLabels->getTypeById($matches[1]);
-        } elseif (preg_match('/^type:(.+)$/', $source, $matches)) {
-            $type = Plugin::getInstance()->productLabels->getTypeByUid($matches[1]);
-        }
-
         // Now figure out what we can do with it
         $actions = [];
         $elementsService = Craft::$app->getElements();
 
-        if (!empty($type)) {
-            // Set Status
-            $actions[] = SetStatus::class;
+        // Set Status
+        $actions[] = SetStatus::class;
 
-            // Edit
-            $actions[] = $elementsService->createAction([
-                'type' => Edit::class,
-                'label' => Craft::t('app', 'Edit product label'),
-            ]);
+        // Edit
+        $actions[] = $elementsService->createAction([
+            'type' => Edit::class,
+            'label' => Craft::t('app', 'Edit product label'),
+        ]);
 
-            // Duplicate
-            $actions[] = Duplicate::class;
+        // Duplicate
+        $actions[] = Duplicate::class;
 
-            // Delete
-            $actions[] = Delete::class;
-        }
+        // Delete
+        $actions[] = Delete::class;
 
         // Restore
         $actions[] = $elementsService->createAction([
@@ -203,6 +162,7 @@ class ProductLabel extends Element
         return $actions;
     }
 
+    /** @noinspection PhpArrayShapeAttributeCanBeAddedInspection */
     protected static function defineSortOptions(): array
     {
         return [
@@ -229,6 +189,7 @@ class ProductLabel extends Element
         ];
     }
 
+    /** @noinspection PhpArrayShapeAttributeCanBeAddedInspection */
     protected static function defineTableAttributes(): array
     {
         return [
@@ -253,6 +214,18 @@ class ProductLabel extends Element
         ]);
     }
 
+    protected function cpEditUrl(): ?string
+    {
+        $path = sprintf('productlabels/%s', $this->getCanonicalId());
+
+        // Ignore homepage/temp slugs
+        if ($this->slug && !str_starts_with($this->slug, '__')) {
+            $path .= "-$this->slug";
+        }
+
+        return UrlHelper::cpUrl($path);
+    }
+
     public function canView(User $user): bool
     {
         return true;
@@ -271,77 +244,16 @@ class ProductLabel extends Element
     /**
      * @throws InvalidConfigException
      */
-    protected function cpEditUrl(): ?string
-    {
-        $type = $this->getType();
-
-        $path = sprintf('productlabels/%s/%s', $type->handle, $this->getCanonicalId());
-
-        // Ignore homepage/temp slugs
-        if ($this->slug && !str_starts_with($this->slug, '__')) {
-            $path .= "-$this->slug";
-        }
-
-        return UrlHelper::cpUrl($path);
-    }
-
-    /**
-     * @throws InvalidConfigException
-     */
-    public function getPostEditUrl(): ?string
-    {
-        $type = $this->getType();
-
-        return UrlHelper::cpUrl("productlabels/$type->handle");
-    }
-
-    /**
-     * @throws InvalidConfigException
-     */
     public function prepareEditScreen(Response $response, string $containerId): void
     {
-        $type = $this->getType();
-
         $crumbs = [
             [
                 'label' => Craft::t('app', 'Product Labels'),
                 'url' => UrlHelper::url('productlabels'),
             ],
-            [
-                'label' => Craft::t('site', $type->name),
-                'url' => UrlHelper::url('productlabels/' . $type->handle),
-            ],
         ];
 
         $response->crumbs($crumbs);
-    }
-
-    /**
-     * @throws InvalidConfigException
-     */
-    public function getType(): ProductLabelType
-    {
-        if (!isset($this->typeId)) {
-            throw new InvalidConfigException('Product label is missing its type ID');
-        }
-
-        $type = Plugin::getInstance()->productLabels->getTypeById($this->typeId);
-
-        if (!$type) {
-            throw new InvalidConfigException('Invalid product label type ID: ' . $this->typeId);
-        }
-
-        return $type;
-    }
-
-    /**
-     * @throws InvalidConfigException
-     */
-    public function beforeSave(bool $isNew): bool
-    {
-        $this->structureId = $this->getType()->structureId;
-
-        return parent::beforeSave($isNew);
     }
 
     /**
@@ -355,7 +267,6 @@ class ProductLabel extends Element
             Craft::$app->db->createCommand()
                 ->insert('{{%productlabels}}', [
                     'id' => $this->id,
-                    'typeId' => $this->typeId,
                     'productCondition' => Json::encode($this->getProductCondition()->getConfig()),
                     'dateFrom' => $this->dateFrom,
                     'dateTo' => $this->dateTo,
@@ -376,27 +287,11 @@ class ProductLabel extends Element
 
     public static function gqlTypeNameByContext(mixed $context): string
     {
-        /** @var ProductLabelType $context */
-        return $context->handle . '_ProductLabel';
+        return 'ProductLabel';
     }
 
-    public static function gqlScopesByContext(mixed $context): array
-    {
-        /** @var ProductLabelType $context */
-        return ['productlabeltypes.' . $context->uid];
-    }
-
-    public static function gqlMutationNameByContext(mixed $context): string
-    {
-        /** @var ProductLabelType $context */
-        return 'save_' . $context->handle . '_ProductLabel';
-    }
-
-    /**
-     * @throws InvalidConfigException
-     */
     public function getGqlTypeName(): string
     {
-        return static::gqlTypeNameByContext($this->getType());
+        return static::gqlTypeNameByContext($this);
     }
 }
