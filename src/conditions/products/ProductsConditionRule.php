@@ -51,6 +51,6 @@ class ProductsConditionRule extends BaseMultiSelectConditionRule implements Elem
     public function matchElement(ElementInterface $element): bool
     {
         /** @var Product $element */
-        return $this->matchValue($element->defaultSku);
+        return $this->matchValue($element->id);
     }
 }
