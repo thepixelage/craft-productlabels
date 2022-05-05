@@ -8,6 +8,7 @@ use craft\commerce\elements\Product;
 use craft\events\DefineBehaviorsEvent;
 use craft\events\DefineFieldLayoutFieldsEvent;
 use craft\events\DefineGqlTypeFieldsEvent;
+use craft\events\PluginEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterGqlTypesEvent;
 use craft\events\RegisterUrlRulesEvent;
@@ -15,9 +16,9 @@ use craft\fieldlayoutelements\TitleField;
 use craft\gql\TypeManager;
 use craft\helpers\UrlHelper;
 use craft\models\FieldLayout;
-use craft\models\Structure;
 use craft\services\Elements;
 use craft\services\Gql;
+use craft\services\Plugins;
 use craft\web\UrlManager;
 use Exception;
 use GraphQL\Type\Definition\Type;
@@ -52,6 +53,7 @@ class Plugin extends \craft\base\Plugin
         $this->hasCpSection = true;
         $this->hasCpSettings = true;
 
+        $this->registerPluginEventListeners();
         $this->registerBehaviors();
         $this->registerServices();
         $this->registerElementTypes();
@@ -59,14 +61,13 @@ class Plugin extends \craft\base\Plugin
         $this->registerCpRoutes();
         $this->registerProjectConfigChangeListeners();
         $this->registerGql();
-        $this->checkFieldLayoutAndStructure();
     }
 
     public function getSettingsResponse(): mixed
     {
         $url = UrlHelper::cpUrl('productlabels/settings');
 
-        return \Craft::$app->controller->redirect($url);
+        return Craft::$app->controller->redirect($url);
     }
 
     public function getCpNavItem(): ?array
@@ -91,6 +92,27 @@ class Plugin extends \craft\base\Plugin
         return array_merge($navItem, [
             'subnav' => $subNavs,
         ]);
+    }
+
+    private function registerPluginEventListeners()
+    {
+        Event::on(
+            Plugins::class,
+            Plugins::EVENT_AFTER_INSTALL_PLUGIN,
+            function (PluginEvent $event) {
+                $this->productLabels->saveFieldLayout();
+                $this->productLabels->createStructure();
+            }
+        );
+
+        Event::on(
+            Plugins::class,
+            Plugins::EVENT_AFTER_UNINSTALL_PLUGIN,
+            function (PluginEvent $event) {
+                Craft::$app->getProjectConfig()->remove('productLabels.structure');
+                Craft::$app->getProjectConfig()->remove('productLabels.fieldLayouts');
+            }
+        );
     }
 
     private function registerBehaviors()
@@ -144,12 +166,14 @@ class Plugin extends \craft\base\Plugin
     private function registerProjectConfigChangeListeners()
     {
         Craft::$app->projectConfig
-            ->onAdd('productLabels', [$this->productLabels, 'handleChangedProductLabel'])
-            ->onUpdate('productLabels', [$this->productLabels, 'handleChangedProductLabel']);
+            ->onAdd('productLabels.fieldLayouts', [$this->productLabels, 'handleChangedProductLabelFieldLayout'])
+            ->onUpdate('productLabels.fieldLayouts', [$this->productLabels, 'handleChangedProductLabelFieldLayout'])
+            ->onRemove('productLabels.fieldLayouts', [$this->productLabels, 'handleDeletedProductLabelFieldLayout']);
 
         Craft::$app->projectConfig
             ->onAdd('productLabels.structure', [$this->productLabels, 'handleChangedProductLabelStructure'])
-            ->onUpdate('productLabels.structure', [$this->productLabels, 'handleChangedProductLabelStructure']);
+            ->onUpdate('productLabels.structure', [$this->productLabels, 'handleChangedProductLabelStructure'])
+            ->onRemove('productLabels.structure', [$this->productLabels, 'handleDeletedProductLabelStructure']);
     }
 
     private function registerGql()
@@ -177,17 +201,5 @@ class Plugin extends \craft\base\Plugin
                 }
             }
         );
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function checkFieldLayoutAndStructure()
-    {
-        $fieldLayout = $this->productLabels->getFieldLayout();
-        assert($fieldLayout instanceof FieldLayout);
-
-        $structure = $this->productLabels->getStructure();
-        assert($structure instanceof Structure);
     }
 }

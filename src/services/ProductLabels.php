@@ -12,6 +12,7 @@ use craft\events\ConfigEvent;
 use craft\helpers\StringHelper;
 use craft\models\FieldLayout;
 use craft\models\Structure;
+use craft\records\StructureElement;
 use thepixelage\productlabels\elements\ProductLabel;
 use yii\base\ErrorException;
 use yii\base\Exception;
@@ -24,8 +25,12 @@ class ProductLabels extends Component
     /**
      * @throws \Exception
      */
-    public function createStructure(string $uid): bool
+    public function createStructure(?string $uid = null): bool
     {
+        if (empty($uid)) {
+            $uid = StringHelper::UUID();
+        }
+
         Craft::$app->getProjectConfig()->set('productLabels.structure', [
             'uid' => $uid,
         ]);
@@ -59,15 +64,17 @@ class ProductLabels extends Component
      * @throws BusyResourceException
      * @throws ErrorException
      */
-    public function saveFieldLayout(FieldLayout $fieldLayout)
+    public function saveFieldLayout(?FieldLayout $fieldLayout = null)
     {
+        if (!$fieldLayout) {
+            $fieldLayout = Craft::$app->getFields()->getLayoutByType(ProductLabel::class);
+        }
+
         $configData = [
-            'fieldLayouts' => [
-                $fieldLayout->uid => $fieldLayout->getConfig()
-            ]
+            $fieldLayout->uid => $fieldLayout->getConfig()
         ];
 
-        Craft::$app->getProjectConfig()->set('productLabels', $configData, "Save product label config");
+        Craft::$app->getProjectConfig()->set('productLabels.fieldLayouts', $configData, "Save product label config");
     }
 
     /**
@@ -91,26 +98,59 @@ class ProductLabels extends Component
 
     /**
      * @throws StructureNotFoundException
+     * @throws \yii\db\Exception
      */
     public function handleChangedProductLabelStructure(ConfigEvent $event)
     {
         $data = $event->newValue;
         $structure = Craft::$app->getStructures()->getStructureByUid($data['uid'], true) ?? new Structure(['uid' => $data['uid']]);
         $structure->maxLevels = 1;
+        $isNewStructure = empty($structure->id);
         Craft::$app->getStructures()->saveStructure($structure);
+
+        if ($isNewStructure) {
+            $elementIds = ProductLabel::find()->status(null)->ids();
+            $rootIds = StructureElement::find()->select(['root'])->where(['in', 'elementId', $elementIds])->column();
+            Craft::$app->db->createCommand()
+                ->update('{{%structureelements}}', ['structureId' => $structure->id], ['in', 'root', $rootIds])
+                ->execute();
+        }
+    }
+
+    public function handleDeletedProductLabelStructure(ConfigEvent $event)
+    {
+        $structureUid = Craft::$app->getProjectConfig()->get('productLabels.structure.uid');
+        if (!$structureUid) {
+            return;
+        }
+
+        $structure = Craft::$app->getStructures()->getStructureByUid($structureUid, true);
+        if (!$structure) {
+            return;
+        }
+
+        Craft::$app->getStructures()->deleteStructureById($structure->id);
     }
 
     /**
      * @throws Exception
      */
-    public function handleChangedProductLabel(ConfigEvent $event)
+    public function handleChangedProductLabelFieldLayout(ConfigEvent $event)
     {
         $data = $event->newValue;
-        if (isset($data['fieldLayouts'])) {
-            $layout = FieldLayout::createFromConfig(reset($data['fieldLayouts']));
+        if (isset($data)) {
+            $layout = FieldLayout::createFromConfig(reset($data));
             $layout->type = ProductLabel::class;
-            $layout->uid = key($data['fieldLayouts']);
+            $layout->uid = key($data);
             Craft::$app->getFields()->saveLayout($layout);
+        }
+    }
+
+    public function handleDeletedProductLabelFieldLayout(ConfigEvent $event)
+    {
+        $fieldLayout = Craft::$app->getFields()->getLayoutByType(ProductLabel::class);
+        if (!empty($fieldLayout->id)) {
+            Craft::$app->getFields()->deleteLayout($fieldLayout);
         }
     }
 
