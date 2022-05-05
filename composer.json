@@ -7,6 +7,8 @@
         "craft",
         "cms",
         "craftcms",
+        "commerce",
+        "craft-commerce",
         "craft-plugin",
         "craft-productlabels"
     ],
