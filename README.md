@@ -10,7 +10,7 @@ Store](https://plugins.craftcms.com/productlabels).
 
 ## Requirements
 
-This plugin requires Craft CMS 4.0.0 or later.
+This plugin requires Craft CMS 4.0.0 or later and Craft Commerce 4.0.0 or later.
 
 ## Installation
 
