@@ -228,7 +228,7 @@ JS;
             throw new NotFoundHttpException("Product label not found");
         }
 
-        $this->enforceDeleteFragmentPermissions($productLabel);
+        $this->enforceDeleteProductLabelPermissions($productLabel);
 
         if (!Craft::$app->getElements()->deleteElement($productLabel)) {
             if ($this->request->getAcceptsJson()) {
@@ -281,7 +281,7 @@ JS;
     /**
      * @throws ForbiddenHttpException
      */
-    protected function enforceDeleteFragmentPermissions(ProductLabel $productLabel)
+    protected function enforceDeleteProductLabelPermissions(ProductLabel $productLabel)
     {
         $userSession = Craft::$app->getUser();
         $user = Craft::$app->users->getUserById($userSession->id);

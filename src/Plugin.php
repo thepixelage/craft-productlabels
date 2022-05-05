@@ -81,13 +81,13 @@ class Plugin extends \craft\base\Plugin
         $generalConfig = Craft::$app->getConfig()->getGeneral();
 
         if ($generalConfig->allowAdminChanges && $currentUser->admin) {
-            $subNavs['fragments'] = [
-                'label' => Craft::t('fragments', "Product Labels"),
+            $subNavs['productlabels'] = [
+                'label' => Craft::t('productlabels', "Product Labels"),
                 'url' => 'productlabels',
             ];
 
             $subNavs['settings'] = [
-                'label' => Craft::t('fragments', "Settings"),
+                'label' => Craft::t('productlabels', "Settings"),
                 'url' => 'productlabels/settings',
             ];
         }
