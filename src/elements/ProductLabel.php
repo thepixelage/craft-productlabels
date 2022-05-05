@@ -236,17 +236,17 @@ class ProductLabel extends Element
 
     public function canView(User $user): bool
     {
-        return true;
+        return $user->can('editProductLabels');
     }
 
     public function canSave(User $user): bool
     {
-        return true;
+        return $user->can('editProductLabels');
     }
 
     public function canDelete(User $user): bool
     {
-        return true;
+        return $user->can('deleteProductLabels');
     }
 
     /**

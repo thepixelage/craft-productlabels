@@ -41,6 +41,8 @@ class SettingsController extends Controller
      */
     public function actionSave(): Response
     {
+        $this->requireAdmin();
+
         $fieldLayout = Craft::$app->getFields()->assembleLayoutFromPost();
         $fieldLayout->type = ProductLabel::class;
         Plugin::getInstance()->productLabels->saveFieldLayout($fieldLayout);

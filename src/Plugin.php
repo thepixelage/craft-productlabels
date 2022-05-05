@@ -12,6 +12,7 @@ use craft\events\PluginEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterGqlTypesEvent;
 use craft\events\RegisterUrlRulesEvent;
+use craft\events\RegisterUserPermissionsEvent;
 use craft\fieldlayoutelements\TitleField;
 use craft\gql\TypeManager;
 use craft\helpers\UrlHelper;
@@ -19,6 +20,7 @@ use craft\models\FieldLayout;
 use craft\services\Elements;
 use craft\services\Gql;
 use craft\services\Plugins;
+use craft\services\UserPermissions;
 use craft\web\UrlManager;
 use Exception;
 use GraphQL\Type\Definition\Type;
@@ -61,6 +63,7 @@ class Plugin extends \craft\base\Plugin
         $this->registerCpRoutes();
         $this->registerProjectConfigChangeListeners();
         $this->registerGql();
+        $this->registerUserPermissions();
     }
 
     public function getSettingsResponse(): mixed
@@ -199,6 +202,32 @@ class Plugin extends \craft\base\Plugin
                         }
                     ];
                 }
+            }
+        );
+    }
+
+    private function registerUserPermissions()
+    {
+        Event::on(
+            UserPermissions::class,
+            UserPermissions::EVENT_REGISTER_PERMISSIONS,
+            function(RegisterUserPermissionsEvent $event) {
+                $event->permissions[] = [
+                    'heading' => Craft::t('productlabels', 'Product Labels'),
+                    'permissions' =>  [
+                        ('editProductLabels') => [
+                            'label' => 'Edit product labels',
+                            'nested' => [
+                                ('createProductLabels') => [
+                                    'label' => 'Create product labels',
+                                ],
+                                ('deleteProductLabels') => [
+                                    'label' => 'Delete product labels',
+                                ],
+                            ],
+                        ],
+                    ]
+                ];
             }
         );
     }

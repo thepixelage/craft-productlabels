@@ -4,7 +4,7 @@
 {% set elementType = 'thepixelage\\productlabels\\elements\\ProductLabel' %}
 
 {% block actionButton %}
-    {% if currentUser.can('registerUsers') %}
+    {% if currentUser.can('createProductLabels') %}
         <a class="btn submit add icon" href="{{ url('productlabels/new') }}">{{ "New product label"|t('app') }}</a>
     {% endif %}
 {% endblock %}
