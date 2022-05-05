@@ -39,7 +39,7 @@ You can customise the field layout for Product Labels by going to Product Labels
 
 ## Managing Product Labels
 
-Product labels come with a set of these native fields that control when a product label should be displayed:
+Product labels come with a set of these setting fields that control when a product label should be displayed:
 
 | Setting       | Description                                                                                                                            |
 |---------------|----------------------------------------------------------------------------------------------------------------------------------------|
