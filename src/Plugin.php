@@ -15,9 +15,11 @@ use craft\fieldlayoutelements\TitleField;
 use craft\gql\TypeManager;
 use craft\helpers\UrlHelper;
 use craft\models\FieldLayout;
+use craft\models\Structure;
 use craft\services\Elements;
 use craft\services\Gql;
 use craft\web\UrlManager;
+use Exception;
 use GraphQL\Type\Definition\Type;
 use thepixelage\productlabels\behaviors\ProductBehavior;
 use thepixelage\productlabels\elements\ProductLabel;
@@ -38,6 +40,9 @@ class Plugin extends \craft\base\Plugin
 
     public string $schemaVersion = '1.0.0';
 
+    /**
+     * @throws Exception
+     */
     public function init()
     {
         parent::init();
@@ -54,6 +59,7 @@ class Plugin extends \craft\base\Plugin
         $this->registerCpRoutes();
         $this->registerProjectConfigChangeListeners();
         $this->registerGql();
+        $this->checkFieldLayoutAndStructure();
     }
 
     public function getSettingsResponse(): mixed
@@ -138,8 +144,12 @@ class Plugin extends \craft\base\Plugin
     private function registerProjectConfigChangeListeners()
     {
         Craft::$app->projectConfig
-            ->onAdd('productLabels', [$this->productLabels, 'handleChangedProductLabelConfig'])
-            ->onUpdate('productLabels', [$this->productLabels, 'handleChangedProductLabelConfig']);
+            ->onAdd('productLabels', [$this->productLabels, 'handleChangedProductLabel'])
+            ->onUpdate('productLabels', [$this->productLabels, 'handleChangedProductLabel']);
+
+        Craft::$app->projectConfig
+            ->onAdd('productLabels.structure', [$this->productLabels, 'handleChangedProductLabelStructure'])
+            ->onUpdate('productLabels.structure', [$this->productLabels, 'handleChangedProductLabelStructure']);
     }
 
     private function registerGql()
@@ -167,5 +177,17 @@ class Plugin extends \craft\base\Plugin
                 }
             }
         );
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function checkFieldLayoutAndStructure()
+    {
+        $fieldLayout = $this->productLabels->getFieldLayout();
+        assert($fieldLayout instanceof FieldLayout);
+
+        $structure = $this->productLabels->getStructure();
+        assert($structure instanceof Structure);
     }
 }

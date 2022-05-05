@@ -13,6 +13,7 @@ use craft\models\Site;
 use craft\web\Controller;
 use Exception;
 use thepixelage\productlabels\elements\ProductLabel;
+use thepixelage\productlabels\Plugin;
 use Throwable;
 use yii\base\InvalidConfigException;
 use yii\web\BadRequestHttpException;
@@ -69,7 +70,7 @@ class ProductLabelsController extends Controller
         }
 
         $this->enforceSitePermission($site);
-//        $this->enforceEditProductLabelPermissions($productLabel);
+        $this->enforceEditProductLabelPermissions($productLabel);
 
         if (Craft::$app->getIsMultiSite()) {
             $siteIds = array_map(function ($siteId) {
@@ -157,6 +158,9 @@ JS;
         $productLabel->title = $this->request->getBodyParam('title', $productLabel->title);
         $productLabel->slug = $this->request->getBodyParam('slug', $productLabel->slug);
 
+        $structure = Plugin::getInstance()->productLabels->getStructure();
+        $productLabel->structureId = $structure->id;
+
         $productLabel->enabled = (bool)$this->request->getBodyParam('enabled', $productLabel->enabled);
         $productLabel->setFieldValuesFromRequest($this->request->getParam('fieldsLocation', 'fields'));
 
@@ -177,7 +181,7 @@ JS;
         $productLabel->setEnabledForSite($enabledForSite ?? $productLabel->getEnabledForSite());
 
         $this->enforceSitePermission($productLabel->getSite());
-//        $this->enforceEditProductLabelPermissions($productLabel);
+        $this->enforceEditProductLabelPermissions($productLabel);
 
         if ($productLabel->getEnabledForSite()) {
             $productLabel->setScenario(Element::SCENARIO_LIVE);
@@ -261,19 +265,16 @@ JS;
 
     /**
      * @throws ForbiddenHttpException
-     * @throws InvalidConfigException
      */
     protected function enforceEditProductLabelPermissions(ProductLabel $productLabel, bool $duplicate = false)
     {
-        $permissionSuffix = ':' . $productLabel->getType()->uid;
-
-        // Make sure the user is allowed to edit entries in this section
-        $this->requirePermission('editProductLabels' . $permissionSuffix);
+        // Make sure the user is allowed to edit product labels
+        $this->requirePermission('editProductLabels');
 
         // Is it a new entry?
         if (!$productLabel->id || $duplicate) {
-            // Make sure they have permission to create new fragments in this zone
-            $this->requirePermission('createProductLabels' . $permissionSuffix);
+            // Make sure they have permission to create new product labels
+            $this->requirePermission('createProductLabels');
         }
     }
 

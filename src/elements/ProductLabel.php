@@ -17,10 +17,12 @@ use craft\elements\User;
 use craft\helpers\Json;
 use craft\helpers\UrlHelper;
 use craft\models\FieldLayout;
+use craft\services\Structures;
 use DateTime;
 use DateTimeZone;
 use thepixelage\productlabels\conditions\ProductLabelProductCondition;
 use thepixelage\productlabels\elements\db\ProductLabelQuery;
+use thepixelage\productlabels\Plugin;
 use yii\base\InvalidConfigException;
 use yii\db\Exception;
 use yii\web\Response;
@@ -107,16 +109,22 @@ class ProductLabel extends Element
         return Craft::$app->getFields()->getLayoutByType(self::class);
     }
 
+    /**
+     * @throws \Exception
+     */
     protected static function defineSources(string $context): array
     {
+        $structure = Plugin::getInstance()->productLabels->getStructure();
+
         return [
             [
                 'key' => '*',
-                'label' => Craft::t('app', 'All product labels'),
+                'label' => Craft::t('app', 'Product labels'),
                 'hasThumbs' => false,
-                'data' => [
-                    'slug' => 'all',
-                ],
+                'data' => ['slug' => 'all'],
+                'structureId' => $structure->id,
+                'structureEditable' => true,
+                'defaultSort' => ['structure', 'asc'],
             ],
         ];
     }
@@ -203,7 +211,7 @@ class ProductLabel extends Element
 
     protected static function defineDefaultTableAttributes(string $source): array
     {
-        return [];
+        return ['slug', 'dateCreated'];
     }
 
     protected function metaFieldsHtml(bool $static): string
@@ -280,6 +288,10 @@ class ProductLabel extends Element
                     'dateTo' => $this->dateTo ? $this->dateTo->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s') : null,
                 ], ['id' => $this->id])
                 ->execute();
+        }
+
+        if (!$this->duplicateOf && $isNew) {
+            Craft::$app->getStructures()->appendToRoot($this->structureId, $this, Structures::MODE_INSERT);
         }
 
         parent::afterSave($isNew);

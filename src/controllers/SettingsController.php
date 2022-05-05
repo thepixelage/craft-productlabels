@@ -7,6 +7,7 @@ use craft\errors\BusyResourceException;
 use craft\errors\StaleResourceException;
 use craft\web\Controller;
 use thepixelage\productlabels\elements\ProductLabel;
+use thepixelage\productlabels\Plugin;
 use yii\base\ErrorException;
 use yii\base\Exception;
 use yii\base\InvalidConfigException;
@@ -42,14 +43,7 @@ class SettingsController extends Controller
     {
         $fieldLayout = Craft::$app->getFields()->assembleLayoutFromPost();
         $fieldLayout->type = ProductLabel::class;
-
-        $configData = [
-            'fieldLayouts' => [
-                $fieldLayout->uid => $fieldLayout->getConfig()
-            ]
-        ];
-
-        Craft::$app->getProjectConfig()->set('productLabels', $configData, "Save product label config");
+        Plugin::getInstance()->productLabels->saveFieldLayout($fieldLayout);
 
         return $this->renderTemplate('productlabels/settings');
     }
