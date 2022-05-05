@@ -2,6 +2,6 @@
 
 ## [Unreleased]
 
-## 4.0.0-beta.1 - 2022-04-19
+## 4.0.0 - 2022-05-05
 ### Added
 - Initial release
