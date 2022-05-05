@@ -21,8 +21,8 @@
     ],
     "require": {
         "php": "^8.0",
-        "craftcms/cms": "^4.0.0-beta",
-        "craftcms/commerce": "^4.0.0-beta",
+        "craftcms/cms": "^4.0.0",
+        "craftcms/commerce": "^4.0.0",
         "ext-json": "*"
     },
     "autoload": {
