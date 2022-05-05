@@ -1,6 +1,8 @@
+<p><a href="https://www.thepixelage.com/plugins/productlabels"><img src="https://www.thepixelage.com/plugins/assets/icon-productlabels.svg" alt="Product Labels icon" width="120"></a></p>
+
 # Product Labels Plugin for Craft CMS
 
-Product Labels is a Craft Commerce plugin for managing promotional labels for products.
+**[Product Labels](https://www.thepixelage.com/plugins/productlabels)** is a Craft Commerce plugin for managing promotional labels for products.
 
 ## License
 
