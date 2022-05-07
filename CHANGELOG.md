@@ -1,8 +1,10 @@
 # Release Notes for Product Labels
 
 ## [Unreleased]
+
+## 4.0.2 - 2022-05-07
 ### Added
-- Added Product Types condition rule for matching products by product types (#2)
+- Add Product Types condition rule for matching products by product types (#1)
 
 [#1]: https://github.com/thepixelage/craft-productlabels/issues/1
 
