@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## 4.0.3 - 2022-05-20
+### Fixed
+- Fix bug that prevents new labels with start/end date to be created
+
 ## 4.0.2 - 2022-05-07
 ### Added
 - Add Product Types condition rule for matching products by product types (#1)

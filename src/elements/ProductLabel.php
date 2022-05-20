@@ -276,8 +276,8 @@ class ProductLabel extends Element
                 ->insert('{{%productlabels}}', [
                     'id' => $this->id,
                     'productCondition' => Json::encode($this->getProductCondition()->getConfig()),
-                    'dateFrom' => $this->dateFrom,
-                    'dateTo' => $this->dateTo,
+                    'dateFrom' => $this->dateFrom ? $this->dateFrom->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s') : null,
+                    'dateTo' => $this->dateTo ? $this->dateTo->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s') : null,
                 ])
                 ->execute();
         } else {
