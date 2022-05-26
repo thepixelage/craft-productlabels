@@ -4,6 +4,7 @@ namespace thepixelage\productlabels\services;
 
 use Craft;
 use craft\base\Component;
+use craft\base\MemoizableArray;
 use craft\commerce\elements\Product;
 use craft\errors\BusyResourceException;
 use craft\errors\StaleResourceException;
@@ -22,6 +23,13 @@ use yii\web\ServerErrorHttpException;
 
 class ProductLabels extends Component
 {
+    public ?MemoizableArray $_productLabels = null;
+
+    public function getAllProductLabels(): array
+    {
+        return $this->_productLabels()->all();
+    }
+
     /**
      * @throws \Exception
      */
@@ -166,5 +174,28 @@ class ProductLabels extends Component
         }
 
         return true;
+    }
+
+    private function _productLabels(): MemoizableArray
+    {
+        if (!isset($this->_productLabels)) {
+            $productLabels = ProductLabel::find()->all();
+            /** @var ProductLabel $productLabel */
+            foreach ($productLabels as $productLabel) {
+                $productCondition = $productLabel->getProductCondition();
+                if (count($productCondition->getConditionRules()) > 0) {
+                    foreach ($productCondition->getConditionRules() as $rule) {
+                        $query = Product::find();
+                        $productCondition->modifyQuery($query);
+
+                        $productLabel->setMatchedProductIds($query->ids());
+                    }
+                }
+            }
+
+            $this->_productLabels = new MemoizableArray(array_values($productLabels));
+        }
+
+        return $this->_productLabels;
     }
 }

@@ -36,6 +36,7 @@ class ProductLabel extends Element
     public ?DateTime $dateFrom = null;
     public ?DateTime $dateTo = null;
     private ElementConditionInterface|null $_productCondition = null;
+    private array $matchedProductIds = [];
 
     public function __construct($config = [])
     {
@@ -97,6 +98,16 @@ class ProductLabel extends Element
         $condition->forProjectConfig = false;
 
         $this->_productCondition = $condition;
+    }
+
+    public function getMatchedProductIds(): array
+    {
+        return $this->matchedProductIds;
+    }
+
+    public function setMatchedProductIds($ids)
+    {
+        $this->matchedProductIds = $ids;
     }
 
     public static function find(): ElementQueryInterface

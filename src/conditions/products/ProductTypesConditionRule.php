@@ -11,7 +11,6 @@ use craft\elements\conditions\ElementConditionRuleInterface;
 use craft\elements\db\ElementQueryInterface;
 use craft\helpers\ArrayHelper;
 use yii\base\InvalidConfigException;
-use yii\base\NotSupportedException;
 
 class ProductTypesConditionRule extends BaseMultiSelectConditionRule implements ElementConditionRuleInterface
 {
@@ -36,11 +35,10 @@ class ProductTypesConditionRule extends BaseMultiSelectConditionRule implements 
     }
 
     /**
-     * @throws NotSupportedException
      */
     public function modifyQuery(ElementQueryInterface $query): void
     {
-        throw new NotSupportedException('Product Types condition rule does not support element queries.');
+        $query->where([($this->operator == self::OPERATOR_NOT_IN ? 'not in' : 'in'), '{{%commerce_products}}.typeId', $this->getValues()]);
     }
 
     /**

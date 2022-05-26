@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## 4.0.4 - 2022-05-26
+### Added
+- Optimise querying product labels for products
+
 ## 4.0.3 - 2022-05-20
 ### Fixed
 - Fix bug that prevents new labels with start/end date to be created
