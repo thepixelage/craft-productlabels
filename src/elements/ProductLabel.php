@@ -11,6 +11,7 @@ use craft\elements\actions\Edit;
 use craft\elements\actions\Restore;
 use craft\elements\actions\SetStatus;
 use craft\elements\conditions\ElementConditionInterface;
+use craft\elements\conditions\users\UserCondition;
 use craft\elements\db\ElementQuery;
 use craft\elements\db\ElementQueryInterface;
 use craft\elements\User;
@@ -36,7 +37,9 @@ class ProductLabel extends Element
     public ?DateTime $dateFrom = null;
     public ?DateTime $dateTo = null;
     private ElementConditionInterface|null $_productCondition = null;
+    private ElementConditionInterface|null $_userCondition = null;
     private array $matchedProductIds = [];
+    private bool $matchCurrentUser = false;
 
     public function __construct($config = [])
     {
@@ -100,6 +103,31 @@ class ProductLabel extends Element
         $this->_productCondition = $condition;
     }
 
+    public function getUserCondition(): ElementConditionInterface
+    {
+        $condition = $this->_userCondition ?? new UserCondition();
+        $condition->mainTag = 'div';
+        $condition->name = 'userCondition';
+
+        return $condition;
+    }
+
+    /**
+     * @throws InvalidConfigException
+     */
+    public function setUserCondition(ElementConditionInterface|string|array|null $condition): void
+    {
+        if (is_string($condition)) {
+            $condition = Json::decodeIfJson($condition);
+        }
+
+        $condition['class'] = UserCondition::class;
+        $condition = Craft::$app->getConditions()->createCondition($condition);
+        $condition->forProjectConfig = false;
+
+        $this->_userCondition = $condition;
+    }
+
     public function getMatchedProductIds(): array
     {
         return $this->matchedProductIds;
@@ -108,6 +136,16 @@ class ProductLabel extends Element
     public function setMatchedProductIds($ids)
     {
         $this->matchedProductIds = $ids;
+    }
+
+    public function getMatchCurrentUser(): bool
+    {
+        return $this->matchCurrentUser;
+    }
+
+    public function setMatchCurrentUser($match)
+    {
+        $this->matchCurrentUser = $match;
     }
 
     public static function find(): ElementQueryInterface
@@ -287,6 +325,7 @@ class ProductLabel extends Element
                 ->insert('{{%productlabels}}', [
                     'id' => $this->id,
                     'productCondition' => Json::encode($this->getProductCondition()->getConfig()),
+                    'userCondition' => Json::encode($this->getUserCondition()->getConfig()),
                     'dateFrom' => $this->dateFrom ? $this->dateFrom->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s') : null,
                     'dateTo' => $this->dateTo ? $this->dateTo->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s') : null,
                 ])
@@ -295,6 +334,7 @@ class ProductLabel extends Element
             Craft::$app->db->createCommand()
                 ->update('{{%productlabels}}', [
                     'productCondition' => Json::encode($this->getProductCondition()->getConfig()),
+                    'userCondition' => Json::encode($this->getUserCondition()->getConfig()),
                     'dateFrom' => $this->dateFrom ? $this->dateFrom->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s') : null,
                     'dateTo' => $this->dateTo ? $this->dateTo->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s') : null,
                 ], ['id' => $this->id])

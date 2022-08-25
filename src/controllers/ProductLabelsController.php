@@ -165,6 +165,7 @@ JS;
         $productLabel->setFieldValuesFromRequest($this->request->getParam('fieldsLocation', 'fields'));
 
         $productLabel->setProductCondition($this->request->getBodyParam('productCondition'));
+        $productLabel->setUserCondition($this->request->getBodyParam('userCondition'));
 
         $dateFromParams = $this->request->getBodyParam('dateFrom');
         $dateToParams = $this->request->getBodyParam('dateTo');

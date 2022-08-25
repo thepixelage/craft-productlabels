@@ -336,11 +336,21 @@
                 {{ productLabel.productCondition.getBuilderHtml()|raw }}
             {% endset %}
 
+            {% set userConditionInput %}
+                {{ productLabel.userCondition.getBuilderHtml()|raw }}
+            {% endset %}
+
             {{ forms.field({
                 label: 'Match Product'|t('commerce'),
                 instructions: 'Create rules that allow this product label to match the product. If no rules are added, this product label will match all products.'|t('productlabels'),
                 errors: productLabel.getErrors('productCondition')
             }, productConditionInput) }}
+
+            {{ forms.field({
+                label: 'Match User'|t('commerce'),
+                instructions: 'Create rules that allow this product label to match the user. If no rules are added, this product label will match all users.'|t('productlabels'),
+                errors: productLabel.getErrors('userCondition')
+            }, userConditionInput) }}
 
         </div>
     </div>

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## 4.0.5 - 2022-08-26
+### Added
+- Add user condition for matching by user attributes
+
 ## 4.0.4 - 2022-05-26
 ### Added
 - Optimise querying product labels for products

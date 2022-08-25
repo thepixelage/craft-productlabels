@@ -26,6 +26,7 @@ class ProductLabelQuery extends ElementQuery
         $this->joinElementTable($productLabelsTableName);
         $this->query->select([
             sprintf('%s.productCondition', $productLabelsTableName),
+            sprintf('%s.userCondition', $productLabelsTableName),
             sprintf('%s.dateFrom', $productLabelsTableName),
             sprintf('%s.dateTo', $productLabelsTableName),
         ]);

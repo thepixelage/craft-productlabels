@@ -6,6 +6,7 @@ use Craft;
 use craft\base\Component;
 use craft\base\MemoizableArray;
 use craft\commerce\elements\Product;
+use craft\elements\User;
 use craft\errors\BusyResourceException;
 use craft\errors\StaleResourceException;
 use craft\errors\StructureNotFoundException;
@@ -180,6 +181,8 @@ class ProductLabels extends Component
     {
         if (!isset($this->_productLabels)) {
             $productLabels = ProductLabel::find()->all();
+            $currentUser = Craft::$app->user->id ? User::find()->id(Craft::$app->user->id)->one() : null;
+
             /** @var ProductLabel $productLabel */
             foreach ($productLabels as $productLabel) {
                 $productCondition = $productLabel->getProductCondition();
@@ -187,10 +190,15 @@ class ProductLabels extends Component
                     foreach ($productCondition->getConditionRules() as $rule) {
                         $query = Product::find();
                         $productCondition->modifyQuery($query);
-
                         $productLabel->setMatchedProductIds($query->ids());
                     }
                 }
+
+                $userCondition = $productLabel->getUserCondition();
+                $productLabel->setMatchCurrentUser(
+                    $userCondition->conditionRules == 0 ||
+                    ($currentUser && $userCondition->matchElement($currentUser))
+                );
             }
 
             $this->_productLabels = new MemoizableArray(array_values($productLabels));
