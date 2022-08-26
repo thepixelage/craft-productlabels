@@ -16,8 +16,8 @@ class ProductBehavior extends Behavior
         $productLabels = Plugin::getInstance()->productLabels->getAllProductLabels();
 
         return array_filter($productLabels, function (ProductLabel $productLabel) use ($product) {
-            return in_array($product->id, $productLabel->getMatchedProductIds()) &&
-                $productLabel->getMatchCurrentUser();
+            return ($productLabel->getMatchAllProducts() || in_array($product->id, $productLabel->getMatchedProductIds()))
+                && $productLabel->getMatchCurrentUser();
         });
     }
 }

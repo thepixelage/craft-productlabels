@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## 4.0.6 - 2022-08-26
+### Fixed
+- Fix bug introduced by new user condition addition
+
 ## 4.0.5 - 2022-08-26
 ### Added
 - Add user condition for matching by user attributes

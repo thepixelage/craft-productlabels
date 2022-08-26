@@ -39,6 +39,7 @@ class ProductLabel extends Element
     private ElementConditionInterface|null $_productCondition = null;
     private ElementConditionInterface|null $_userCondition = null;
     private array $matchedProductIds = [];
+    private bool $matchAllProducts = false;
     private bool $matchCurrentUser = false;
 
     public function __construct($config = [])
@@ -136,6 +137,16 @@ class ProductLabel extends Element
     public function setMatchedProductIds($ids)
     {
         $this->matchedProductIds = $ids;
+    }
+
+    public function getMatchAllProducts(): bool
+    {
+        return $this->matchAllProducts;
+    }
+
+    public function setMatchAllProducts($match)
+    {
+        $this->matchAllProducts = $match;
     }
 
     public function getMatchCurrentUser(): bool

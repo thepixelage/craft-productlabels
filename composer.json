@@ -2,7 +2,7 @@
     "name": "thepixelage/craft-productlabels",
     "description": "Product Labels is a Craft Commerce plugin for creating labels for products",
     "type": "craft-plugin",
-    "version": "4.0.5",
+    "version": "4.0.6",
     "keywords": [
         "craft",
         "cms",

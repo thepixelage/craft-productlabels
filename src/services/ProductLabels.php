@@ -187,16 +187,16 @@ class ProductLabels extends Component
             foreach ($productLabels as $productLabel) {
                 $productCondition = $productLabel->getProductCondition();
                 if (count($productCondition->getConditionRules()) > 0) {
-                    foreach ($productCondition->getConditionRules() as $rule) {
-                        $query = Product::find();
-                        $productCondition->modifyQuery($query);
-                        $productLabel->setMatchedProductIds($query->ids());
-                    }
+                    $query = Product::find();
+                    $productCondition->modifyQuery($query);
+                    $productLabel->setMatchedProductIds($query->ids());
+                } else {
+                    $productLabel->setMatchAllProducts(true);
                 }
 
                 $userCondition = $productLabel->getUserCondition();
                 $productLabel->setMatchCurrentUser(
-                    $userCondition->conditionRules == 0 ||
+                    count($userCondition->conditionRules) == 0 ||
                     ($currentUser && $userCondition->matchElement($currentUser))
                 );
             }
